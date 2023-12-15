@@ -1,4 +1,4 @@
-package dynamodb
+package dynamo
 
 import (
 	"careerhub-dataprovider/careerhub/provider/utils/terr"

@@ -1,4 +1,4 @@
-package dynamodb
+package dynamo
 
 import "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
@@ -11,4 +11,5 @@ type TableDefinition struct {
 type Model interface {
 	GetKey() map[string]types.AttributeValue
 	TableDef() TableDefinition
+	SetCreateAt(DynamoTime)
 }

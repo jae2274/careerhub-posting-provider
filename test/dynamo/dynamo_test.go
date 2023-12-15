@@ -1,7 +1,7 @@
-package dynamodb
+package dynamo
 
 import "testing"
 
-func CheckValidTable(t *testing.T) {
+func TestCheckValidTable(t *testing.T) {
 	t.Skip() //TODO: implement this test
 }
