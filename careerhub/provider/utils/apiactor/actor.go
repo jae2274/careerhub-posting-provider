@@ -11,9 +11,18 @@ import (
 )
 
 type ApiActor struct {
-	rjChan    chan *RequestJob
+	rjChan    chan *requestJob
 	minDelay  int64
 	isStarted bool
+}
+
+func NewApiActor(minDelay int64) *ApiActor {
+	apiActor := ApiActor{
+		rjChan:   make(chan *requestJob),
+		minDelay: minDelay,
+	}
+
+	return &apiActor
 }
 
 type Request struct {
@@ -32,7 +41,7 @@ func NewRequest(method string, url string) *Request {
 	return r
 }
 
-type RequestJob struct {
+type requestJob struct {
 	request    *http.Request
 	resultChan chan<- *result
 }
@@ -40,15 +49,6 @@ type RequestJob struct {
 type result struct {
 	reader io.ReadCloser
 	err    error
-}
-
-func NewApiActor(minDelay int64) *ApiActor {
-	apiActor := ApiActor{
-		rjChan:   make(chan *RequestJob),
-		minDelay: minDelay,
-	}
-
-	return &apiActor
 }
 
 func Run[QUIT any](a *ApiActor, quitChan <-chan QUIT) {
@@ -112,7 +112,7 @@ func (a *ApiActor) Call(r *Request) (io.ReadCloser, error) {
 	}
 
 	resultChan := make(chan *result)
-	a.rjChan <- &RequestJob{
+	a.rjChan <- &requestJob{
 		request:    httpReq,
 		resultChan: resultChan,
 	}
