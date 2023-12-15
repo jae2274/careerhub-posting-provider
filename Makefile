@@ -37,6 +37,10 @@ stop:
 ## restart: stops and starts the application
 restart: stop start
 
+proto:
+	@env PATH="${PATH}:$(go env GOPATH)/bin"
+	@protoc careerhub/provider/queue/message/v1/*.proto  --go_out=.  --go_opt=paths=source_relative  --proto_path=.
+
 ## test: runs all tests
 test:	env
 	@go test -p 1 -timeout 30s ./test/...
