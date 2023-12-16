@@ -42,6 +42,8 @@ proto:
 	@protoc careerhub/provider/queue/message/v1/*.proto  --go_out=.  --go_opt=paths=source_relative  --proto_path=.
 
 ## test: runs all tests
-test:	env
+test:	
+	@echo "Testing..."
+	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} SQS_ENDPOINT=${SQS_ENDPOINT} QUEUE_NAME=${QUEUE_NAME}
 	@go test -p 1 -timeout 30s ./test/...
 

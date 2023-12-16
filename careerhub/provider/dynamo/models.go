@@ -9,7 +9,5 @@ type TableDefinition struct {
 }
 
 type Model interface {
-	GetKey() map[string]types.AttributeValue
 	TableDef() TableDefinition
-	SetCreateAt(DynamoTime)
 }

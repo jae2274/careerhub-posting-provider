@@ -3,22 +3,24 @@ package dynamo
 import (
 	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Repo[KEY any, VALUE Model] interface {
 	Get(*KEY) (*VALUE, error)
+	Gets([]*KEY) ([]*VALUE, error)
 	Save(*VALUE) (*VALUE, error)
 	DbClient() *dynamodb.Client
 }
 
-func getFromRepo[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, value *VALUE) (*VALUE, error) {
+func Get[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, key map[string]types.AttributeValue) (*VALUE, error) {
 
+	model := new(VALUE)
 	response, err := r.DbClient().GetItem(context, &dynamodb.GetItemInput{
-		Key: (*value).GetKey(), TableName: (*value).TableDef().TableName,
+		Key: key, TableName: (*model).TableDef().TableName,
 	})
 
 	if err != nil {
@@ -27,17 +29,15 @@ func getFromRepo[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Conte
 		return nil, nil // Return nil when item is not found
 	}
 
-	err = attributevalue.UnmarshalMap(response.Item, value)
+	err = attributevalue.UnmarshalMap(response.Item, model)
 	if err != nil {
 		return nil, err
 	}
 
-	return value, err
+	return model, err
 }
 
-func saveFromRepo[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, value *VALUE) (*VALUE, error) {
-	(*value).SetCreateAt(DynamoTime(time.Now()))
-
+func Save[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, value *VALUE) (*VALUE, error) {
 	item, err := attributevalue.MarshalMap(value)
 	if err != nil {
 		return nil, terr.Wrap(err)
@@ -52,4 +52,35 @@ func saveFromRepo[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Cont
 	}
 
 	return value, nil
+}
+
+func Gets[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, keys []map[string]types.AttributeValue) ([]*VALUE, error) {
+	model := new(VALUE)
+	tableName := *(*model).TableDef().TableName
+
+	response, err := r.DbClient().BatchGetItem(context, &dynamodb.BatchGetItemInput{
+		RequestItems: map[string]types.KeysAndAttributes{
+			tableName: {
+				Keys: keys,
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	result := make([]*VALUE, len(response.Responses[tableName]))
+
+	for i, item := range response.Responses[tableName] {
+		value := new(VALUE)
+		err = attributevalue.UnmarshalMap(item, value)
+		if err != nil {
+			return nil, terr.Wrap(err)
+		}
+
+		result[i] = value
+	}
+
+	return result, nil
 }
