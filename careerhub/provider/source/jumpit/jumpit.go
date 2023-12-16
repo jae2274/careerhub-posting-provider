@@ -33,10 +33,10 @@ func (js *JumpitSource) List(page, size int) ([]source.JobPostingId, error) {
 	postingIds := make([]source.JobPostingId, len(result.Result.Positions))
 
 	for i, position := range result.Result.Positions {
-		postingIds[i] = *source.NewJobPostingId(
-			fmt.Sprintf("%d", position.Id),
-			map[string]string{"jobCategory": position.JobCategory},
-		)
+		postingIds[i] = source.JobPostingId{
+			PostingId: fmt.Sprintf("%d", position.Id),
+			EtcInfo:   map[string]string{"jobCategory": position.JobCategory},
+		}
 	}
 
 	return postingIds, nil
@@ -61,12 +61,5 @@ func (js *JumpitSource) Company(companyId string) (*source.Company, error) {
 		return nil, err
 	}
 
-	companyResult := response.Result
-	return &source.Company{
-		Name:        companyResult.CompanyName,
-		CompanyUrl:  companyResult.CompanySite,
-		CompanyLogo: companyResult.CompanyLogo,
-		Description: companyResult.CompanyService.Description,
-		// CompanyImages: TODO,
-	}, nil
+	return convertSourceCompany(response, js.Site()), nil
 }

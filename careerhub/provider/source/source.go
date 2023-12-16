@@ -99,6 +99,8 @@ type Career struct {
 // }
 
 type Company struct {
+	Site          string
+	CompanyId     string
 	Name          string
 	CompanyUrl    *string
 	CompanyImages []string

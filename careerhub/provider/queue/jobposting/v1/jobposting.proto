@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package message.v1;
+package jobposting.v1;
 
-option go_package = "careerhub-dataprovider/careerhub/provider/queue/message_v1";
+option go_package = "careerhub-dataprovider/careerhub/provider/queue/jobposting_v1";
 
 message JobPostingInfo{
 	string site = 1;
 	string postingId      =2;
-	Company company      =3;
+	string companyId      =3;
 	repeated string jobCategory =4;
 	MainContent    mainContent = 5;
 	repeated string requiredSkill = 6;
@@ -30,13 +30,7 @@ message MainContent{
 
 }
 
-message Company{
-	string name =1;
-	optional string companyUrl =2;
-	repeated string companyImages =3;
-	string description   =4;
-	string companyLogo   =5;
-}
+
 
 message Career{
     optional int32 min =1;

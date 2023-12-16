@@ -4,6 +4,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/utils/ptr"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -167,12 +168,38 @@ type company struct {
 }
 
 type companyResult struct {
+	Id             int            `json:"id"`
 	CompanyName    string         `json:"companyName"`
 	CompanySite    *string        `json:"companySite,omitempty"`
 	CompanyService companyService `json:"companyService"`
 	CompanyLogo    string         `json:"companyLogo"`
+	ProfileImages  []profileImage `json:"profileImages"`
+}
+
+type profileImage struct {
+	ImagePath string `json:"imagePath"`
 }
 
 type companyService struct {
 	Description string `json:"description"`
+}
+
+func convertSourceCompany(company *company, site string) *source.Company {
+	result := company.Result
+
+	companyImages := make([]string, len(result.ProfileImages))
+
+	for i, image := range result.ProfileImages {
+		companyImages[i] = image.ImagePath
+	}
+
+	return &source.Company{
+		Site:          site,
+		CompanyId:     strconv.Itoa(result.Id),
+		Name:          result.CompanyName,
+		CompanyUrl:    result.CompanySite,
+		CompanyImages: companyImages,
+		Description:   result.CompanyService.Description,
+		CompanyLogo:   result.CompanyLogo,
+	}
 }
