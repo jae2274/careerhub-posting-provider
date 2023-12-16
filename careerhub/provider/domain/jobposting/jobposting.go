@@ -12,18 +12,15 @@ type JobPostingId struct {
 	PostingId string
 }
 type JobPosting struct {
-	Site      string             `dynamodbav:"site"`
-	PostingId string             `dynamodbav:"postingId"`
-	State     State              `dynamodbav:"state"`
-	CreatedAt dynamo.DynamoTime  `dynamodbav:"createdAt"`
-	UpdatedAt *dynamo.DynamoTime `dynamodbav:"updatedAt"`
+	Site      string            `dynamodbav:"site"`
+	PostingId string            `dynamodbav:"postingId"`
+	CreatedAt dynamo.DynamoTime `dynamodbav:"createdAt"`
 }
 
 func NewJobPosting(site string, postingId string) *JobPosting {
 	return &JobPosting{
 		Site:      site,
 		PostingId: postingId,
-		State:     Hiring,
 	}
 }
 
@@ -31,6 +28,7 @@ const (
 	TableName      = "JobPosting"
 	SiteField      = "site"
 	PostingIdField = "postingId"
+	StateField     = "state"
 )
 
 func (jp JobPosting) TableDef() dynamo.TableDefinition {
@@ -62,3 +60,20 @@ func (jp JobPosting) TableDef() dynamo.TableDefinition {
 		TableName: tableNamePtr,
 	}
 }
+
+// func (jp JobPosting) GlobalSecondaryIndexes() []types.GlobalSecondaryIndex {
+// 	secIndex := types.GlobalSecondaryIndex{
+// 		IndexName: ptr.P("StateIndex"), // Set the name of the index
+// 		KeySchema: []types.KeySchemaElement{
+// 			{
+// 				AttributeName: ptr.P(StateField), // Set the attribute name for the index
+// 				KeyType:       types.KeyTypeRange,
+// 			},
+// 		},
+// 		Projection: &types.Projection{
+// 			ProjectionType: types.ProjectionTypeAll, // Set the projection type for the index
+// 		},
+// 	}
+
+// 	return []types.GlobalSecondaryIndex{secIndex}
+// }

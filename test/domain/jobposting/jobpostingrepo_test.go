@@ -9,9 +9,9 @@ import (
 )
 
 func TestJobPostingRepo(t *testing.T) {
-	savedJpId := &jobposting.JobPostingId{Site: "savedSite", PostingId: "savedId"}
-	savedJpId2 := &jobposting.JobPostingId{Site: "savedSite2", PostingId: "savedId2"}
-	savedJpId3 := &jobposting.JobPostingId{Site: "savedSite3", PostingId: "savedId3"}
+	savedJpId := &jobposting.JobPostingId{Site: "jumpit", PostingId: "savedId"}
+	savedJpId2 := &jobposting.JobPostingId{Site: "jumpit", PostingId: "savedId2"}
+	savedJpId3 := &jobposting.JobPostingId{Site: "wanted", PostingId: "savedId3"}
 	notExistedJpId := &jobposting.JobPostingId{Site: "notExistedSite", PostingId: "notExistedId"}
 	notExistedJpId2 := &jobposting.JobPostingId{Site: "notExistedSite2", PostingId: "notExistedId2"}
 
@@ -29,6 +29,11 @@ func TestJobPostingRepo(t *testing.T) {
 		require.NoError(t, err)
 		findedJp.CreatedAt = savedJp.CreatedAt //ignore createdAt
 		require.Equal(t, savedJp, findedJp)
+
+		ids, err := jpRepo.GetAllHiring(savedJpId.Site)
+		require.NoError(t, err)
+		require.Len(t, ids, 1)
+		require.Equal(t, savedJpId.PostingId, ids[0].PostingId)
 	})
 
 	t.Run("FindNotExisted", func(t *testing.T) {
@@ -38,6 +43,10 @@ func TestJobPostingRepo(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Nil(t, findedMatches)
+
+		ids, err := jpRepo.GetAllHiring(notExistedJpId.Site)
+		require.NoError(t, err)
+		require.Len(t, ids, 0)
 	})
 
 	t.Run("SaveAndFindAll", func(t *testing.T) {
@@ -67,6 +76,17 @@ func TestJobPostingRepo(t *testing.T) {
 		require.True(t, isContain(findedJps, savedJp), "findedJps: %v, savedJps: %v", findedJps, savedJps)
 		require.True(t, isContain(findedJps, savedJp2), "findedJps: %v, savedJps: %v", findedJps, savedJps)
 		require.True(t, isContain(findedJps, savedJp3), "findedJps: %v, savedJps: %v", findedJps, savedJps)
+
+		ids, err := jpRepo.GetAllHiring(savedJpId.Site)
+		require.NoError(t, err)
+		require.Len(t, ids, 2)
+		require.True(t, isContainsId(ids, savedJpId))
+		require.True(t, isContainsId(ids, savedJpId2))
+
+		ids, err = jpRepo.GetAllHiring(savedJpId3.Site)
+		require.NoError(t, err)
+		require.Len(t, ids, 1)
+		require.True(t, isContainsId(ids, savedJpId3))
 	})
 }
 

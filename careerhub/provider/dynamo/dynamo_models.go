@@ -10,4 +10,5 @@ type TableDefinition struct {
 
 type Model interface {
 	TableDef() TableDefinition
+	// GlobalSecondaryIndexes() []types.GlobalSecondaryIndex
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func TestJumpitSource(t *testing.T) {
-	callDelayMilis := int64(3000)
+	callDelayMilis := int64(2000)
 	t.Run("list, detail, company", func(t *testing.T) {
 		source := jumpit.NewJumpitSource(callDelayMilis)
 		source.Run(make(<-chan app.QuitSignal))

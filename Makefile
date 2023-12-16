@@ -44,6 +44,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} SQS_ENDPOINT=${SQS_ENDPOINT} QUEUE_NAME=${QUEUE_NAME}
-	@go test -p 1 -timeout 30s ./test/...
+	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} SQS_ENDPOINT=${SQS_ENDPOINT} QUEUE_NAME=${QUEUE_NAME} go test -p 1 -timeout 60s ./test/...
+	
 

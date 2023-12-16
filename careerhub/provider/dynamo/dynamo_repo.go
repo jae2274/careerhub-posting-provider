@@ -31,7 +31,7 @@ func Get[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, key 
 
 	err = attributevalue.UnmarshalMap(response.Item, model)
 	if err != nil {
-		return nil, err
+		return nil, terr.Wrap(err)
 	}
 
 	return model, err
