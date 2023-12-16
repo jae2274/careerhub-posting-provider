@@ -108,6 +108,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategor
 		Site:        site,
 		PostingId:   fmt.Sprintf("%d", result.ID),
 		CompanyId:   fmt.Sprintf("%d", result.CompanyProfileID),
+		CompanyName: result.CompanyName,
 		JobCategory: strings.Split(jobCategory, ","),
 		MainContent: source.MainContent{
 			PostUrl:        postUrl,

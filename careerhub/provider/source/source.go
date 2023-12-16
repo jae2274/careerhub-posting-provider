@@ -21,18 +21,18 @@ type JobPostingId struct {
 // }
 
 type JobPostingDetail struct {
-	Site           string
-	PostingId      string
-	CompanyName    string
-	CompanyId      string
-	JobCategory    []string
-	MainContent    MainContent
-	RequiredSkill  []string
-	Tags           []string
-	RequiredCareer Career
+	Site           string      `validate:"nonzero"`
+	PostingId      string      `validate:"nonzero"`
+	CompanyId      string      `validate:"nonzero"`
+	CompanyName    string      `validate:"nonzero"`
+	JobCategory    []string    `validate:"nonzero"`
+	MainContent    MainContent `validate:"nonzero"`
+	RequiredSkill  []string    `validate:"nonzero"`
+	Tags           []string    `validate:"nonzero"`
+	RequiredCareer Career      `validate:"nonzero"`
 	PublishedAt    *int64
 	ClosedAt       *int64
-	Address        []string
+	Address        []string `validate:"nonzero"`
 }
 
 // func NewJobPostingDetail(
@@ -61,13 +61,13 @@ type JobPostingDetail struct {
 // }
 
 type MainContent struct {
-	PostUrl        string
-	Title          string
-	Intro          string
-	MainTask       string
-	Qualifications string
-	Preferred      string
-	Benefits       string
+	PostUrl        string `validate:"nonzero"`
+	Title          string `validate:"nonzero"`
+	Intro          string `validate:"nonzero"`
+	MainTask       string `validate:"nonzero"`
+	Qualifications string `validate:"nonzero"`
+	Preferred      string `validate:"nonzero"`
+	Benefits       string `validate:"nonzero"`
 	RecruitProcess *string
 }
 
@@ -100,13 +100,13 @@ type Career struct {
 // }
 
 type Company struct {
-	Site          string
-	CompanyId     string
-	Name          string
+	Site          string `validate:"nonzero"`
+	CompanyId     string `validate:"nonzero"`
+	Name          string `validate:"nonzero"`
 	CompanyUrl    *string
-	CompanyImages []string
-	Description   string
-	CompanyLogo   string
+	CompanyImages []string `validate:"nonzero"`
+	Description   string   `validate:"nonzero"`
+	CompanyLogo   string   `validate:"nonzero"`
 }
 
 // func NewCompany(

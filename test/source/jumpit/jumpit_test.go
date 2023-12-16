@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/validator.v2"
 )
 
 func TestJumpitSource(t *testing.T) {
@@ -23,10 +24,12 @@ func TestJumpitSource(t *testing.T) {
 
 		require.NotNil(t, postingDetail)
 		require.Equal(t, "jumpit", postingDetail.Site)
+		require.NoError(t, validator.Validate(postingDetail))
 
 		company, err := source.Company(postingDetail.CompanyId)
 
 		require.NoError(t, err)
 		require.NotNil(t, company)
+		require.NoError(t, validator.Validate(company))
 	}
 }
