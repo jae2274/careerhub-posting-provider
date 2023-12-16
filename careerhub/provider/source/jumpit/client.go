@@ -1,6 +1,7 @@
 package jumpit
 
 import (
+	"careerhub-dataprovider/careerhub/provider/app"
 	jjson "careerhub-dataprovider/careerhub/provider/utils"
 	"careerhub-dataprovider/careerhub/provider/utils/apiactor"
 	"careerhub-dataprovider/careerhub/provider/utils/terr"
@@ -17,10 +18,14 @@ func newJumpitApiClient(callDelay int64) *jumpitApiClient {
 	}
 }
 
+func (ja *jumpitApiClient) run(quitChan <-chan app.QuitSignal) {
+	apiactor.Run(ja.aActor, quitChan)
+}
+
 func (ja *jumpitApiClient) List(page, size int) (*postingList, error) {
 	request := apiactor.NewRequest(
 		"GET",
-		fmt.Sprintf("https://api.jumpit.co.kr/api/positions?page=%d&size=%d&sort=reg_dt&highlight=false"),
+		fmt.Sprintf("https://api.jumpit.co.kr/api/positions?page=%d&size=%d&sort=reg_dt&highlight=false", page, size),
 	)
 
 	return callApi[postingList](ja.aActor, request)

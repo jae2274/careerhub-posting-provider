@@ -1,6 +1,7 @@
 package jumpit
 
 import (
+	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"fmt"
 	"log"
@@ -10,10 +11,14 @@ type JumpitSource struct {
 	client jumpitApiClient
 }
 
-func NewJumpitSource(callDelay int64) *JumpitSource {
+func NewJumpitSource(callDelayMilis int64) *JumpitSource {
 	return &JumpitSource{
-		client: *newJumpitApiClient(callDelay),
+		client: *newJumpitApiClient(callDelayMilis),
 	}
+}
+
+func (s *JumpitSource) Run(quitChan <-chan app.QuitSignal) {
+	s.client.run(quitChan)
 }
 
 func (s *JumpitSource) Site() string {

@@ -3,6 +3,7 @@ package jumpit
 import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/utils/ptr"
+	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"fmt"
 	"strconv"
 	"strings"
@@ -90,19 +91,17 @@ type WorkingPlace struct {
 	IsDomestic bool   `json:"isDomestic"`
 }
 
-const timeFormat = "yyyy-MM-dd HH:mm:ss"
-
 func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategory string) (*source.JobPostingDetail, error) {
 	result := postingDetail.Result
 
-	publishedAt, err := time.Parse(timeFormat, result.PublishedAt)
+	publishedAt, err := time.Parse(time.DateTime, result.PublishedAt)
 	if err != nil {
-		return nil, err
+		return nil, terr.Wrap(err)
 	}
 
-	closedAt, err := time.Parse(timeFormat, result.ClosedAt)
+	closedAt, err := time.Parse(time.DateTime, result.ClosedAt)
 	if err != nil {
-		return nil, err
+		return nil, terr.Wrap(err)
 	}
 
 	return &source.JobPostingDetail{

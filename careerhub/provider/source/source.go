@@ -23,6 +23,7 @@ type JobPostingId struct {
 type JobPostingDetail struct {
 	Site           string
 	PostingId      string
+	CompanyName    string
 	CompanyId      string
 	JobCategory    []string
 	MainContent    MainContent
