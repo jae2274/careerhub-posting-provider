@@ -4,6 +4,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,8 +12,9 @@ import (
 )
 
 func TestJumpitSource(t *testing.T) {
+	callDelayMilis := int64(3000)
 	t.Run("list, detail, company", func(t *testing.T) {
-		source := jumpit.NewJumpitSource(1000)
+		source := jumpit.NewJumpitSource(callDelayMilis)
 		source.Run(make(<-chan app.QuitSignal))
 
 		jobPostingIds, err := source.List(1, 10) //jumpit은 한 페이지당 최소 16개의 채용공고가 있음
@@ -37,7 +39,7 @@ func TestJumpitSource(t *testing.T) {
 	})
 
 	t.Run("AllJobPostingIds", func(t *testing.T) {
-		src := jumpit.NewJumpitSource(1000)
+		src := jumpit.NewJumpitSource(callDelayMilis)
 		src.Run(make(<-chan app.QuitSignal))
 
 		jobPostingIds, err := source.AllJobPostingIds(src)
@@ -50,5 +52,12 @@ func TestJumpitSource(t *testing.T) {
 			_, ok := jpId.EtcInfo["jobCategory"]
 			require.True(t, ok)
 		}
+
+		page1, err := src.List(1, 10)
+		require.NoError(t, err)
+
+		last10 := jobPostingIds[len(jobPostingIds)-10:]
+		slices.Reverse(last10)
+		require.ElementsMatch(t, page1, last10) //가장 오래된 채용공고부터 정렬되어야 하므로, 마지막 10개는 첫 페이지와 같아야 한다.
 	})
 }

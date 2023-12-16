@@ -1,9 +1,11 @@
 package source
 
+import "slices"
+
 type JobPostingSource interface {
 	Site() string
 	MaxPageSize() int
-	List(page, size int) ([]*JobPostingId, error)
+	List(page, size int) ([]*JobPostingId, error) //가장 최신의 채용공고부터 정렬되도록 반환
 	Detail(*JobPostingId) (*JobPostingDetail, error)
 	Company(companyId string) (*Company, error)
 }
@@ -54,10 +56,12 @@ type Company struct {
 	CompanyLogo   string   `validate:"nonzero"`
 }
 
+// src에서 모든 채용공고id를 가져온다.
+// 가장 오래된 채용공고부터 정렬되도록 반환되어야 한다.
 func AllJobPostingIds(src JobPostingSource) ([]*JobPostingId, error) {
 	maxPageSize := src.MaxPageSize()
 
-	jobPostingIds := make([]*JobPostingId, maxPageSize*3)
+	jobPostingIds := make([]*JobPostingId, 0)
 
 	page := 0
 	for {
@@ -73,6 +77,6 @@ func AllJobPostingIds(src JobPostingSource) ([]*JobPostingId, error) {
 
 		jobPostingIds = append(jobPostingIds, ids...)
 	}
-
+	slices.Reverse(jobPostingIds)
 	return jobPostingIds, nil
 }
