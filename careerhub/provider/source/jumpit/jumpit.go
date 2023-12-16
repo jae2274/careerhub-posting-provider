@@ -26,19 +26,19 @@ func (s *JumpitSource) Site() string {
 }
 
 func (s *JumpitSource) MaxPageSize() int {
-	return 100
+	return 1000
 }
 
-func (js *JumpitSource) List(page, size int) ([]source.JobPostingId, error) {
+func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 	result, err := js.client.List(page, size)
 	if err != nil {
 		return nil, err
 	}
 
-	postingIds := make([]source.JobPostingId, len(result.Result.Positions))
+	postingIds := make([]*source.JobPostingId, len(result.Result.Positions))
 
 	for i, position := range result.Result.Positions {
-		postingIds[i] = source.JobPostingId{
+		postingIds[i] = &source.JobPostingId{
 			PostingId: fmt.Sprintf("%d", position.Id),
 			EtcInfo:   map[string]string{"jobCategory": position.JobCategory},
 		}
@@ -47,7 +47,7 @@ func (js *JumpitSource) List(page, size int) ([]source.JobPostingId, error) {
 	return postingIds, nil
 }
 
-func (js *JumpitSource) Detail(jpId source.JobPostingId) (*source.JobPostingDetail, error) {
+func (js *JumpitSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
 	postingUrl, response, err := js.client.Detail(jpId.PostingId)
 	if err != nil {
 		return nil, err
