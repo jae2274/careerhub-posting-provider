@@ -3,10 +3,13 @@ package jobposting
 import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/utils/enum"
+	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -63,6 +66,38 @@ func (jpr *JobPostingRepo) Gets(ids []*JobPostingId) ([]*JobPosting, error) {
 func (jpr *JobPostingRepo) Save(value *JobPosting) (*JobPosting, error) {
 	value.CreatedAt = dynamo.DynamoTime(time.Now())
 	return dynamo.Save(jpr, context.TODO(), value)
+}
+
+func (jpr *JobPostingRepo) GetAllHiring(site string) ([]*JobPostingId, error) {
+	filtEx := expression.Name(SiteField).Equal(expression.Value(site))
+	projEx := expression.NamesList(
+		expression.Name(SiteField), expression.Name(PostingIdField))
+
+	expr, err := expression.NewBuilder().WithFilter(filtEx).WithProjection(projEx).Build()
+
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	response, err := jpr.dbClient.Scan(context.TODO(), &dynamodb.ScanInput{
+		TableName:                 jpr.tableName,
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
+	})
+
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	var jobPostingIds []*JobPostingId
+	err = attributevalue.UnmarshalListOfMaps(response.Items, &jobPostingIds)
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	return jobPostingIds, nil
 }
 
 func (jpr *JobPostingRepo) DbClient() *dynamodb.Client {
