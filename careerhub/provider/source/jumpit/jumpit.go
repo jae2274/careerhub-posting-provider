@@ -29,6 +29,18 @@ func (s *JumpitSource) MaxPageSize() int {
 	return 500
 }
 
+func (s *JumpitSource) LastPage() (*source.Page, error) {
+	result, err := s.client.List(1, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	return &source.Page{
+		Page: result.Result.TotalCount/s.MaxPageSize() + 1,
+		Size: s.MaxPageSize(),
+	}, nil
+}
+
 func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 	result, err := js.client.List(page, size)
 	if err != nil {

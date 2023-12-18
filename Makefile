@@ -3,9 +3,6 @@ CODE_DIR=./tft/producer
 
 include test.env
 
-env:
-	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} SQS_ENDPOINT=${SQS_ENDPOINT} QUEUE_NAME=${QUEUE_NAME}
-
 ## build: Build binary
 build:
 	@echo "Building..."

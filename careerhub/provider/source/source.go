@@ -2,9 +2,14 @@ package source
 
 import "slices"
 
+type Page struct {
+	Size int
+	Page int
+}
 type JobPostingSource interface {
 	Site() string
 	MaxPageSize() int
+	LastPage() (*Page, error)
 	List(page, size int) ([]*JobPostingId, error) //가장 최신의 채용공고부터 정렬되도록 반환
 	Detail(*JobPostingId) (*JobPostingDetail, error)
 	Company(companyId string) (*Company, error)

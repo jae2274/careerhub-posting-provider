@@ -17,7 +17,8 @@ type postingList struct {
 }
 
 type listResult struct {
-	Positions []listPosition
+	TotalCount int `json:"totalCount"`
+	Positions  []listPosition
 }
 
 type listPosition struct {
