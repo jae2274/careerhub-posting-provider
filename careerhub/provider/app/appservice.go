@@ -1,6 +1,7 @@
 package app
 
 import (
+	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/queue/message_v1"
@@ -110,4 +111,42 @@ func processClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Que
 
 	//TODO: delete closed job postings
 	// jpRepo.DeleteAll(closedJpIds)
+}
+
+func processCompany(
+	src source.JobPostingSource,
+	companyRepo *company.CompanyRepo, //TODO: need to implement
+	companyId *company.CompanyId, queue queue.Queue, quitChan <-chan QuitSignal) {
+
+	companyInfo, err := companyRepo.Get(companyId)
+
+	if err != nil {
+		//TODO: error handling
+		return
+	} else if companyInfo != nil {
+		return // already processed
+	}
+
+	srcCompany, err := src.Company(companyId.CompanyId)
+
+	if err != nil {
+		//TODO: error handling
+		return
+	}
+
+	message := message_v1.Company{
+		Site:          srcCompany.Site,
+		CompanyId:     srcCompany.CompanyId,
+		Name:          srcCompany.Name,
+		CompanyUrl:    srcCompany.CompanyUrl,
+		CompanyImages: srcCompany.CompanyImages,
+		Description:   srcCompany.Description,
+		CompanyLogo:   srcCompany.CompanyLogo,
+	}
+
+	//TODO: modify queue interface
+	// queue.Send(message)
+	fmt.Println(message)
+
+	companyRepo.Save(company.NewCompany(src.Site(), companyId.CompanyId))
 }
