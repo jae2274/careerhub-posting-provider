@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package jobposting.v1;
+package message_v1;
 
-option go_package = "careerhub-dataprovider/careerhub/provider/queue/jobposting_v1";
+option go_package = "careerhub-dataprovider/careerhub/provider/queue/message_v1";
 
 message JobPostingInfo{
 	string site 					= 1;

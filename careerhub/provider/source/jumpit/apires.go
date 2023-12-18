@@ -48,8 +48,8 @@ type detailResult struct {
 	Welfares              string         `json:"welfares"`
 	RecruitProcess        string         `json:"recruitProcess"`
 	Newcomer              bool           `json:"newcomer"`
-	MinCareer             *int           `json:"minCareer,omitempty"`
-	MaxCareer             *int           `json:"maxCareer,omitempty"`
+	MinCareer             *int32         `json:"minCareer,omitempty"`
+	MaxCareer             *int32         `json:"maxCareer,omitempty"`
 	PositionStatus        string         `json:"positionStatus"`
 	DeveloperInterviews   []interface{}  `json:"developerInterviews"`
 	ItCompanyStory        []interface{}  `json:"itCompanyStory"`

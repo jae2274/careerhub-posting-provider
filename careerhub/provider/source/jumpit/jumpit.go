@@ -51,6 +51,7 @@ func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 
 	for i, position := range result.Result.Positions {
 		postingIds[i] = &source.JobPostingId{
+			Site:      js.Site(),
 			PostingId: fmt.Sprintf("%d", position.Id),
 			EtcInfo:   map[string]string{"jobCategory": position.JobCategory},
 		}

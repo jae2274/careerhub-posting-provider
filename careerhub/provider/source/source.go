@@ -48,8 +48,8 @@ type MainContent struct {
 }
 
 type Career struct {
-	Min *int
-	Max *int
+	Min *int32
+	Max *int32
 }
 
 type Company struct {
