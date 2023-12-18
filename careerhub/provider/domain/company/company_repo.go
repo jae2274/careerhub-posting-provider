@@ -7,6 +7,6 @@ func (cr *CompanyRepo) Get(companyId *CompanyId) (*Company, error) {
 	return nil, nil
 }
 
-func (cr *CompanyRepo) Save(company *Company) error {
-	return nil
+func (cr *CompanyRepo) Save(company *Company) (*Company, error) {
+	return nil, nil
 }

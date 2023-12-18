@@ -6,23 +6,27 @@ import (
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/queue/message_v1"
 	"careerhub-dataprovider/careerhub/provider/source"
+	"careerhub-dataprovider/careerhub/provider/utils/cchan"
 	"fmt"
 )
 
 type AppService struct {
-	src  source.JobPostingSource
-	repo *jobposting.JobPostingRepo
+	src            source.JobPostingSource
+	jobpostingRepo *jobposting.JobPostingRepo
+	companyRepo    *company.CompanyRepo
+	closedJpQueue  queue.Queue
+	companyQueue   queue.Queue
 }
 
 func NewAppService(src source.JobPostingSource, repo *jobposting.JobPostingRepo) *AppService {
 	return &AppService{
-		src:  src,
-		repo: repo,
+		src:            src,
+		jobpostingRepo: repo,
 	}
 }
 
 func (as *AppService) Run(quitChan <-chan QuitSignal) error {
-	savedJpIds, err := as.repo.GetAllHiring(as.src.Site())
+	savedJpIds, err := as.jobpostingRepo.GetAllHiring(as.src.Site())
 	if err != nil {
 		return err
 	}
@@ -34,24 +38,54 @@ func (as *AppService) Run(quitChan <-chan QuitSignal) error {
 
 	separatedIds := SeparateIds(savedJpIds, hiringJpIds)
 
-	ProcessNewJobPostings(as.src, separatedIds.NewPostingIds, quitChan)
-	ProcessClosedJobPostings(separatedIds.ClosePostingIds)
+	ProcessClosedJobPostings(as.jobpostingRepo, as.closedJpQueue, separatedIds.ClosePostingIds)
+
+	errChan := make(chan error, 100)
+	detailChan := CallDetailApi(as.src, separatedIds.NewPostingIds, errChan, quitChan)
+	processedDetailChan := ProcessCompany(as.src, as.companyRepo, as.companyQueue, detailChan, errChan, quitChan)
+
+	processedChan := SendJobPostingInfo(as.jobpostingRepo, as.closedJpQueue, processedDetailChan, errChan, quitChan)
 
 	return nil
 }
 
-func ProcessNewJobPostings(src source.JobPostingSource, newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) {
+func CallDetailApi(src source.JobPostingSource, newJpIds []*source.JobPostingId, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
+	messageChan := make(chan *source.JobPostingDetail)
+	go callDetailApi(src, newJpIds, messageChan, errChan, quitChan)
 
+	return messageChan
 }
 
-func processNewJobPostings(src source.JobPostingSource, jpRepo *jobposting.JobPostingRepo, queue queue.Queue, newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) {
+func callDetailApi(src source.JobPostingSource, newJpIds []*source.JobPostingId, resultChan chan<- *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) {
+	defer close(resultChan)
+
 	for _, newJpId := range newJpIds {
 		detail, err := src.Detail(newJpId)
 
-		if err != nil {
-			//TODO: error handling
-			continue
+		ok := cchan.SendResult(detail, err, resultChan, errChan, quitChan)
+
+		if !ok {
+			return
 		}
+	}
+}
+
+func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, messageChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) chan<- ProcessedSignal {
+	processedChan := make(chan ProcessedSignal, 100)
+	go sendJobPostingInfo(jpRepo, queue, messageChan, processedChan, errChan, quitChan)
+
+	return processedChan
+}
+func sendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, messageChan <-chan *source.JobPostingDetail, processedChan chan<- ProcessedSignal, errChan chan<- error, quitChan <-chan QuitSignal) {
+	defer close(processedChan)
+
+	for {
+		received, ok := cchan.ReceiveOrQuit(messageChan, quitChan)
+		if !ok {
+			return
+		}
+
+		detail := *received
 
 		message := message_v1.JobPostingInfo{
 			Site:        detail.Site,
@@ -82,16 +116,13 @@ func processNewJobPostings(src source.JobPostingSource, jpRepo *jobposting.JobPo
 
 		//TODO: modify queue interface
 		// queue.Send(message)
-		fmt.Println(message)
-		jpRepo.Save(jobposting.NewJobPosting(message.Site, message.CompanyId))
+		_, err := jpRepo.Save(jobposting.NewJobPosting(message.Site, message.PostingId))
+
+		cchan.SendResult(ProcessedSignal{}, err, processedChan, errChan, quitChan)
 	}
 }
 
-func ProcessClosedJobPostings(closedJpIds []*jobposting.JobPostingId) {
-
-}
-
-func processClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, closedJpIds []*jobposting.JobPostingId, quitChan <-chan QuitSignal) {
+func ProcessClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, closedJpIds []*jobposting.JobPostingId) {
 	closedJpIdMessages := make([]*message_v1.JobPostingId, len(closedJpIds))
 
 	for i, closedJpId := range closedJpIds {
@@ -113,25 +144,52 @@ func processClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Que
 	// jpRepo.DeleteAll(closedJpIds)
 }
 
+func ProcessCompany(src source.JobPostingSource,
+	companyRepo *company.CompanyRepo, //TODO: need to implement
+	queue queue.Queue, detailChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
+
+	prosessedChan := make(chan *source.JobPostingDetail)
+
+	go func() {
+		for {
+			received, ok := cchan.ReceiveOrQuit(detailChan, quitChan)
+			if !ok {
+				return
+			}
+
+			detail := *received
+
+			err := processCompany(src, companyRepo, queue, &company.CompanyId{
+				Site:      detail.Site,
+				CompanyId: detail.CompanyId,
+			})
+
+			cchan.SendResult(detail, err, prosessedChan, errChan, quitChan)
+		}
+	}()
+
+	return prosessedChan
+}
+
 func processCompany(
 	src source.JobPostingSource,
 	companyRepo *company.CompanyRepo, //TODO: need to implement
-	companyId *company.CompanyId, queue queue.Queue, quitChan <-chan QuitSignal) {
+	queue queue.Queue, companyId *company.CompanyId) error {
 
 	companyInfo, err := companyRepo.Get(companyId)
 
 	if err != nil {
 		//TODO: error handling
-		return
+		return err
 	} else if companyInfo != nil {
-		return // already processed
+		return nil // already processed
 	}
 
 	srcCompany, err := src.Company(companyId.CompanyId)
 
 	if err != nil {
 		//TODO: error handling
-		return
+		return err
 	}
 
 	message := message_v1.Company{
@@ -148,5 +206,7 @@ func processCompany(
 	// queue.Send(message)
 	fmt.Println(message)
 
-	companyRepo.Save(company.NewCompany(src.Site(), companyId.CompanyId))
+	_, err = companyRepo.Save(company.NewCompany(src.Site(), companyId.CompanyId))
+
+	return err
 }
