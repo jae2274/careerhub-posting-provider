@@ -99,3 +99,12 @@ func isContain(jps []*jobposting.JobPosting, jp *jobposting.JobPosting) bool {
 
 	return false
 }
+
+func isContainsId(ids []*jobposting.JobPostingId, idToFind *jobposting.JobPostingId) bool {
+	for _, item := range ids {
+		if item.Site == idToFind.Site && item.PostingId == idToFind.PostingId {
+			return true
+		}
+	}
+	return false
+}

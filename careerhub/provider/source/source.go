@@ -16,6 +16,7 @@ type JobPostingSource interface {
 }
 
 type JobPostingId struct {
+	Site      string
 	PostingId string
 	EtcInfo   map[string]string
 }
