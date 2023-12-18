@@ -1,7 +1,7 @@
-package app
+package appfunc
 
 import (
-	"careerhub-dataprovider/careerhub/provider/app"
+	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"testing"
@@ -26,7 +26,7 @@ func TestSeparateIds(t *testing.T) {
 
 	t.Run("Hiring JobPostings are all new", func(t *testing.T) {
 
-		separateIds := app.SeparateIds(make([]*jobposting.JobPostingId, 0), convertJpIdsToSourceJpIds(notSavedJumpitJps))
+		separateIds := appfunc.SeparateIds(make([]*jobposting.JobPostingId, 0), convertJpIdsToSourceJpIds(notSavedJumpitJps))
 
 		require.Len(t, separateIds.NewPostingIds, 3)
 		require.Len(t, separateIds.ClosePostingIds, 0)
@@ -37,7 +37,7 @@ func TestSeparateIds(t *testing.T) {
 
 	t.Run("Hiring JobPostings are all saved", func(t *testing.T) {
 
-		separateIds := app.SeparateIds(savedWantedJps, convertJpIdsToSourceJpIds(savedWantedJps))
+		separateIds := appfunc.SeparateIds(savedWantedJps, convertJpIdsToSourceJpIds(savedWantedJps))
 
 		require.Len(t, separateIds.NewPostingIds, 0)
 		require.Len(t, separateIds.ClosePostingIds, 0)
@@ -45,7 +45,7 @@ func TestSeparateIds(t *testing.T) {
 
 	t.Run("All saved JobPostings are closed and Hiring JobPostings are all new", func(t *testing.T) {
 
-		separateIds := app.SeparateIds(savedWantedJps, convertJpIdsToSourceJpIds(notSavedJumpitJps))
+		separateIds := appfunc.SeparateIds(savedWantedJps, convertJpIdsToSourceJpIds(notSavedJumpitJps))
 
 		require.Len(t, separateIds.NewPostingIds, 3)
 		require.True(t, isContainsId(separateIds.NewPostingIds, notSavedJumpitJps[0]))

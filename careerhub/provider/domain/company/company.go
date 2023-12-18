@@ -1,6 +1,11 @@
 package company
 
-import "careerhub-dataprovider/careerhub/provider/dynamo"
+import (
+	"careerhub-dataprovider/careerhub/provider/dynamo"
+	"careerhub-dataprovider/careerhub/provider/utils/ptr"
+
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
 
 type CompanyId struct {
 	Site      string
@@ -13,9 +18,45 @@ type Company struct {
 	CreatedAt dynamo.DynamoTime `dynamodbav:"createdAt"`
 }
 
+const (
+	TableName      = "company"
+	SiteField      = "site"
+	CompanyIdField = "companyId"
+)
+
 func NewCompany(site, companyId string) *Company {
 	return &Company{
 		Site:      site,
 		CompanyId: companyId,
+	}
+}
+
+func (c Company) TableDef() dynamo.TableDefinition {
+	siteFieldPtr := ptr.P(SiteField)
+	companyIdFieldPtr := ptr.P(CompanyIdField)
+	tableNamePtr := ptr.P(TableName)
+
+	return dynamo.TableDefinition{
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: siteFieldPtr,
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: companyIdFieldPtr,
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: siteFieldPtr,
+				KeyType:       types.KeyTypeRange,
+			},
+			{
+				AttributeName: companyIdFieldPtr,
+				KeyType:       types.KeyTypeHash,
+			},
+		},
+		TableName: tableNamePtr,
 	}
 }

@@ -1,4 +1,4 @@
-package awsconfig
+package awscfg
 
 import (
 	"careerhub-dataprovider/careerhub/provider/utils/terr"
