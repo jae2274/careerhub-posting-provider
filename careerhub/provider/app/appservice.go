@@ -43,7 +43,7 @@ func ProcessNewJobPostings(src source.JobPostingSource, newJpIds []*source.JobPo
 
 }
 
-func processNewJobPostings(src source.JobPostingSource, queue queue.Queue, newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) {
+func processNewJobPostings(src source.JobPostingSource, jpRepo *jobposting.JobPostingRepo, queue queue.Queue, newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) {
 	for _, newJpId := range newJpIds {
 		detail, err := src.Detail(newJpId)
 
@@ -82,9 +82,32 @@ func processNewJobPostings(src source.JobPostingSource, queue queue.Queue, newJp
 		//TODO: modify queue interface
 		// queue.Send(message)
 		fmt.Println(message)
+		jpRepo.Save(jobposting.NewJobPosting(message.Site, message.CompanyId))
 	}
 }
 
 func ProcessClosedJobPostings(closedJpIds []*jobposting.JobPostingId) {
 
+}
+
+func processClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, closedJpIds []*jobposting.JobPostingId, quitChan <-chan QuitSignal) {
+	closedJpIdMessages := make([]*message_v1.JobPostingId, len(closedJpIds))
+
+	for i, closedJpId := range closedJpIds {
+		closedJpIdMessages[i] = &message_v1.JobPostingId{
+			Site:      closedJpId.Site,
+			PostingId: closedJpId.PostingId,
+		}
+	}
+
+	message := message_v1.ClosedJobPostings{
+		JobPostingIds: closedJpIdMessages,
+	}
+
+	//TODO: modify queue interface
+	// queue.Send(message)
+	fmt.Println(message)
+
+	//TODO: delete closed job postings
+	// jpRepo.DeleteAll(closedJpIds)
 }
