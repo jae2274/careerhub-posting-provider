@@ -39,21 +39,21 @@ func (jp JobPosting) TableDef() dynamo.TableDefinition {
 	return dynamo.TableDefinition{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: siteFieldPtr,
+				AttributeName: postingIdFieldPtr,
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 			{
-				AttributeName: postingIdFieldPtr,
+				AttributeName: siteFieldPtr,
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: siteFieldPtr,
+				AttributeName: postingIdFieldPtr,
 				KeyType:       types.KeyTypeHash,
 			},
 			{
-				AttributeName: postingIdFieldPtr,
+				AttributeName: siteFieldPtr,
 				KeyType:       types.KeyTypeRange,
 			},
 		},

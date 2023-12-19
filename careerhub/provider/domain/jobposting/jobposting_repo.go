@@ -106,7 +106,7 @@ func (jpr *JobPostingRepo) DbClient() *dynamodb.Client {
 
 func newKey(site string, postingId string) map[string]types.AttributeValue {
 	return map[string]types.AttributeValue{
-		"site":      &types.AttributeValueMemberS{Value: site},
-		"postingId": &types.AttributeValueMemberS{Value: postingId},
+		SiteField:      &types.AttributeValueMemberS{Value: site},
+		PostingIdField: &types.AttributeValueMemberS{Value: postingId},
 	}
 }
