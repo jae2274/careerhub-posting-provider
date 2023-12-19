@@ -6,7 +6,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/queue/message_v1"
 	"careerhub-dataprovider/careerhub/provider/source"
-	"fmt"
 )
 
 type SeparatedIds struct {
@@ -48,7 +47,7 @@ func CallDetail(src source.JobPostingSource, jpId *source.JobPostingId) (*source
 	return src.Detail(jpId)
 }
 
-func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, closedJpIds []*jobposting.JobPostingId) error {
+func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue *queue.ClosedJobPostingQueue, closedJpIds []*jobposting.JobPostingId) error {
 	closedJpIdMessages := make([]*message_v1.JobPostingId, len(closedJpIds))
 
 	for i, closedJpId := range closedJpIds {
@@ -58,13 +57,11 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue,
 		}
 	}
 
-	message := message_v1.ClosedJobPostings{
+	message := &message_v1.ClosedJobPostings{
 		JobPostingIds: closedJpIdMessages,
 	}
 
-	//TODO: modify queue interface
-	// queue.Send(message)
-	fmt.Println(message)
+	queue.Send(message)
 
 	//TODO: delete closed job postings
 	// jpRepo.DeleteAll(closedJpIds)
@@ -72,8 +69,8 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue queue.Queue,
 	return nil
 }
 
-func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, detail *source.JobPostingDetail) error {
-	message := message_v1.JobPostingInfo{
+func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue *queue.JobPostingQueue, detail *source.JobPostingDetail) error {
+	message := &message_v1.JobPostingInfo{
 		Site:        detail.Site,
 		PostingId:   detail.PostingId,
 		CompanyId:   detail.CompanyId,
@@ -100,8 +97,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, de
 		Address:     detail.Address,
 	}
 
-	//TODO: modify queue interface
-	// queue.Send(message)
+	queue.Send(message)
 	_, err := jpRepo.Save(jobposting.NewJobPosting(message.Site, message.PostingId))
 	return err
 }
@@ -109,7 +105,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, de
 func ProcessCompany(
 	src source.JobPostingSource,
 	companyRepo *company.CompanyRepo, //TODO: need to implement
-	queue queue.Queue,
+	queue *queue.CompanyQueue,
 	companyId *company.CompanyId,
 ) error {
 
@@ -129,7 +125,7 @@ func ProcessCompany(
 		return err
 	}
 
-	message := message_v1.Company{
+	message := &message_v1.Company{
 		Site:          srcCompany.Site,
 		CompanyId:     srcCompany.CompanyId,
 		Name:          srcCompany.Name,
@@ -139,9 +135,7 @@ func ProcessCompany(
 		CompanyLogo:   srcCompany.CompanyLogo,
 	}
 
-	//TODO: modify queue interface
-	// queue.Send(message)
-	fmt.Println(message)
+	queue.Send(message)
 
 	_, err = companyRepo.Save(company.NewCompany(src.Site(), companyId.CompanyId))
 

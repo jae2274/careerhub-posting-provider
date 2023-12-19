@@ -14,12 +14,12 @@ type App struct {
 	src             source.JobPostingSource
 	jobpostingRepo  *jobposting.JobPostingRepo
 	companyRepo     *company.CompanyRepo
-	jobPostingQueue queue.Queue
-	closedJpQueue   queue.Queue
-	companyQueue    queue.Queue
+	jobPostingQueue *queue.JobPostingQueue
+	closedJpQueue   *queue.ClosedJobPostingQueue
+	companyQueue    *queue.CompanyQueue
 }
 
-func NewApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, jobPostingQueue queue.Queue, closedJpQueue queue.Queue, companyQueue queue.Queue) *App {
+func NewApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, jobPostingQueue *queue.JobPostingQueue, closedJpQueue *queue.ClosedJobPostingQueue, companyQueue *queue.CompanyQueue) *App {
 	return &App{
 		src:             src,
 		jobpostingRepo:  jobpostingRepo,
@@ -52,7 +52,7 @@ func (as *App) Run(quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan e
 	detailChan := callDetailApi(as.src, separatedIds.NewPostingIds, errChan, quitChan)
 	processedDetailChan := processCompany(as.src, as.companyRepo, as.companyQueue, detailChan, errChan, quitChan)
 
-	processedChan := sendJobPostingInfo(as.jobpostingRepo, as.closedJpQueue, processedDetailChan, errChan, quitChan)
+	processedChan := sendJobPostingInfo(as.jobpostingRepo, as.jobPostingQueue, processedDetailChan, errChan, quitChan)
 
 	return processedChan, errChan, nil
 }
@@ -77,7 +77,7 @@ func callDetailApi(src source.JobPostingSource, newJpIds []*source.JobPostingId,
 	return resultChan
 }
 
-func sendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, messageChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan ProcessedSignal {
+func sendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue *queue.JobPostingQueue, messageChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan ProcessedSignal {
 	processedChan := make(chan ProcessedSignal, 100)
 
 	go func() {
@@ -103,7 +103,7 @@ func sendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue queue.Queue, me
 
 func processCompany(src source.JobPostingSource,
 	companyRepo *company.CompanyRepo, //TODO: need to implement
-	queue queue.Queue, detailChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
+	queue *queue.CompanyQueue, detailChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
 
 	prosessedChan := make(chan *source.JobPostingDetail)
 

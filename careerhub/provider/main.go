@@ -53,13 +53,22 @@ func initApp() *app.App {
 
 	src := jumpit.NewJumpitSource(3000)
 
+	jobPostingQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.JobPostingQueue)
+	checkErr(err)
+
+	closedQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.ClosedQueue)
+	checkErr(err)
+
+	companyQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.CompanyQueue)
+	checkErr(err)
+
 	return app.NewApp(
 		src,
 		jobPostingRepo,
 		companyRepo,
-		&queue.FakeQueue{},
-		&queue.FakeQueue{},
-		&queue.FakeQueue{},
+		queue.NewJobPostingQueue(jobPostingQueue),
+		queue.NewClosedJobPostingQueue(closedQueue),
+		queue.NewCompanyQueue(companyQueue),
 	)
 }
 
