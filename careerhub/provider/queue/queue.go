@@ -2,19 +2,17 @@ package queue
 
 import (
 	"fmt"
-	"io"
 )
 
 type Queue interface {
-	Send(rc io.Reader) error
+	Send(message *string) error
 }
 
 type FakeQueue struct {
 }
 
-func (fq *FakeQueue) Send(rc io.Reader) error {
-	b, _ := io.ReadAll(rc)
-	// fmt.Print("Done sending match data\n")
-	fmt.Printf("%s\n\n", string(b))
+func (fq *FakeQueue) Send(message *string) error {
+
+	fmt.Printf("%s\n\n", *message)
 	return nil
 }

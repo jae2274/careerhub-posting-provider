@@ -22,8 +22,8 @@ func main() {
 	checkErr(err)
 
 	errorQuit := make(chan app.QuitSignal)
-	go Timeout(10*time.Minute, 10*time.Minute, processedChan, quit)
-	go TooMuchError(10, 10*time.Minute, errChan, errorQuit)
+	go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, quit)
+	go cchan.TooMuchError(10, 10*time.Minute, errChan, errorQuit)
 
 	select {
 	case <-errorQuit:
@@ -66,60 +66,5 @@ func initApp() *app.App {
 func checkErr(err error) {
 	if err != nil {
 		log.Fatal(err)
-	}
-}
-
-func TooMuchError(periodErrCount uint, limitErrPeriod time.Duration, errChan <-chan error, quitChan chan app.QuitSignal) {
-	defer func() {
-		log.Default().Println("TooMuchError closed")
-	}()
-
-	var errCount uint = 0
-	errCaughtTimes := make([]time.Time, periodErrCount)
-
-	for {
-		err, ok := cchan.ReceiveOrQuit(errChan, quitChan)
-		if !ok {
-			return
-		}
-
-		log.Default().Println((*err).Error())
-		errCount++
-		errCaughtTimes = append(errCaughtTimes, time.Now())
-		if len(errCaughtTimes) >= int(periodErrCount) {
-			lastErrCaughtTime := errCaughtTimes[len(errCaughtTimes)-1]
-			recentErrCaughtTime := errCaughtTimes[len(errCaughtTimes)-10]
-			errCaughtPeriod := lastErrCaughtTime.Sub(recentErrCaughtTime)
-
-			if errCaughtPeriod.Abs() < limitErrPeriod.Abs() {
-				close(quitChan)
-				return
-			}
-			errCaughtTimes = errCaughtTimes[1:]
-		}
-
-	}
-}
-
-func Timeout(initDuration, duration time.Duration, processedChan <-chan app.ProcessedSignal, quitChan chan app.QuitSignal) {
-	defer func() {
-		log.Default().Println("Timeout closed")
-	}()
-	waitDuration := initDuration
-
-	for {
-
-		select {
-		case <-quitChan:
-			return
-		case <-time.After(waitDuration):
-			close(quitChan)
-			return
-		case _, ok := <-processedChan:
-			if !ok {
-				return
-			}
-			waitDuration = duration
-		}
 	}
 }

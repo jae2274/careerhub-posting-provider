@@ -15,21 +15,20 @@ import (
 	"github.com/jae2274/goutils/terr"
 )
 
-func InitSQS(t *testing.T) (queue.Queue, *sqs.Client, *string) {
+func InitSQS(t *testing.T, queueName string) (queue.Queue, *sqs.Client, *string) {
 	variables, err := vars.Variables()
 	checkError(t, err)
 
 	sqsEndpoint := variables.SqsEndpoint
-	queueName := &variables.QueueName
 
 	cfg, err := awsconfig.Config()
 	checkError(t, err)
 
 	sqsClient := queue.NewClient(cfg, sqsEndpoint)
 
-	queueUrl := truncateSQS(t, sqsClient, queueName)
+	queueUrl := truncateSQS(t, sqsClient, &queueName)
 
-	queue, err := queue.NewSQS(cfg, variables.SqsEndpoint, *queueName)
+	queue, err := queue.NewSQS(cfg, variables.SqsEndpoint, queueName)
 	checkError(t, err)
 
 	return queue, sqsClient, queueUrl

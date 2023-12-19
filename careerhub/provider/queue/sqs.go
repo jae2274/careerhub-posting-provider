@@ -2,7 +2,6 @@ package queue
 
 import (
 	"context"
-	"io"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -40,17 +39,10 @@ func NewSQS(cfg *aws.Config, endpoint *string, queueName string) (*SQS, error) {
 	}, nil
 }
 
-func (q *SQS) Send(rc io.Reader) error {
-	b, err := io.ReadAll(rc)
+func (q *SQS) Send(message *string) error {
 
-	if err != nil {
-		return terr.Wrap(err)
-	}
-
-	messageBody := string(b)
-
-	_, err = q.client.SendMessage(context.Background(), &sqs.SendMessageInput{
-		MessageBody: &messageBody,
+	_, err := q.client.SendMessage(context.Background(), &sqs.SendMessageInput{
+		MessageBody: message,
 		QueueUrl:    &q.queueUrl,
 	})
 
