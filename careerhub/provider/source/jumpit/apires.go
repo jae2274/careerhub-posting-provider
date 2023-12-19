@@ -2,12 +2,13 @@ package jumpit
 
 import (
 	"careerhub-dataprovider/careerhub/provider/source"
-	"careerhub-dataprovider/careerhub/provider/utils/ptr"
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jae2274/goutils/ptr"
+	"github.com/jae2274/goutils/terr"
 )
 
 // list api result

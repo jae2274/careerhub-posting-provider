@@ -1,13 +1,13 @@
 package dynamo
 
 import (
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jae2274/goutils/terr"
 )
 
 func NewDbClient(cfg *aws.Config, endpoint *string) (*dynamodb.Client, error) {

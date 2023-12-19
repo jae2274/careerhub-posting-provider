@@ -2,8 +2,6 @@ package jobposting
 
 import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
-	"careerhub-dataprovider/careerhub/provider/utils/enum"
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
 	"fmt"
 	"time"
@@ -12,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jae2274/goutils/enum"
+	"github.com/jae2274/goutils/terr"
 )
 
 type StateValues struct{}

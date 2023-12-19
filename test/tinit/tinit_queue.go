@@ -3,7 +3,6 @@ package tinit
 import (
 	awsconfig "careerhub-dataprovider/careerhub/provider/awscfg"
 	"careerhub-dataprovider/careerhub/provider/queue"
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
 	"errors"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/jae2274/goutils/terr"
 )
 
 func InitSQS(t *testing.T) (queue.Queue, *sqs.Client, *string) {

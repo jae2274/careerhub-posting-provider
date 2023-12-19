@@ -2,10 +2,11 @@ package jumpit
 
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
-	jjson "careerhub-dataprovider/careerhub/provider/utils"
-	"careerhub-dataprovider/careerhub/provider/utils/apiactor"
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"fmt"
+
+	"github.com/jae2274/goutils/apiactor"
+	"github.com/jae2274/goutils/jjson"
+	"github.com/jae2274/goutils/terr"
 )
 
 type jumpitApiClient struct {

@@ -8,10 +8,11 @@ import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
-	"careerhub-dataprovider/careerhub/provider/utils/cchan"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"log"
 	"time"
+
+	"github.com/jae2274/goutils/cchan"
 )
 
 func main() {

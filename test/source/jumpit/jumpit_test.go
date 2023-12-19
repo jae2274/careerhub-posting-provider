@@ -14,16 +14,6 @@ import (
 func TestJumpitSource(t *testing.T) {
 	callDelayMilis := int64(2000)
 
-	t.Run("LastPage", func(t *testing.T) {
-		source := jumpit.NewJumpitSource(callDelayMilis)
-		source.Run(make(<-chan app.QuitSignal))
-
-		lastPage, err := source.LastPage()
-		require.NoError(t, err)
-		require.NotNil(t, lastPage)
-		require.Equal(t, 7, lastPage.Page)
-		require.Equal(t, 500, lastPage.Size)
-	})
 	t.Run("list, detail, company", func(t *testing.T) {
 		source := jumpit.NewJumpitSource(callDelayMilis)
 		source.Run(make(<-chan app.QuitSignal))

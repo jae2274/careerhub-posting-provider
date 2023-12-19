@@ -6,7 +6,8 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/source"
-	"careerhub-dataprovider/careerhub/provider/utils/cchan"
+
+	"github.com/jae2274/goutils/cchan"
 )
 
 type App struct {

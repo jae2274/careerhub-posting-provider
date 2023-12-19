@@ -1,12 +1,12 @@
 package dynamo
 
 import (
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jae2274/goutils/terr"
 )
 
 type Repo[KEY any, VALUE Model] interface {

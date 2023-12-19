@@ -2,9 +2,9 @@ package jobposting
 
 import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
-	"careerhub-dataprovider/careerhub/provider/utils/ptr"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jae2274/goutils/ptr"
 )
 
 type JobPostingId struct {

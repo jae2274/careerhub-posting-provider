@@ -1,12 +1,12 @@
 package queue
 
 import (
-	"careerhub-dataprovider/careerhub/provider/utils/terr"
 	"context"
 	"io"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/jae2274/goutils/terr"
 )
 
 type SQS struct {
