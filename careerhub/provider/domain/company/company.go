@@ -19,7 +19,7 @@ type Company struct {
 }
 
 const (
-	TableName      = "company"
+	TableName      = "Company"
 	SiteField      = "site"
 	CompanyIdField = "companyId"
 )
@@ -39,22 +39,22 @@ func (c Company) TableDef() dynamo.TableDefinition {
 	return dynamo.TableDefinition{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: siteFieldPtr,
+				AttributeName: companyIdFieldPtr,
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 			{
-				AttributeName: companyIdFieldPtr,
+				AttributeName: siteFieldPtr,
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: siteFieldPtr,
-				KeyType:       types.KeyTypeRange,
-			},
-			{
 				AttributeName: companyIdFieldPtr,
 				KeyType:       types.KeyTypeHash,
+			},
+			{
+				AttributeName: siteFieldPtr,
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 		TableName: tableNamePtr,

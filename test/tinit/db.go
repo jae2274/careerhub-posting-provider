@@ -2,6 +2,7 @@ package tinit
 
 import (
 	awsconfig "careerhub-dataprovider/careerhub/provider/awscfg"
+	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/vars"
@@ -38,7 +39,7 @@ func DB(t *testing.T) *dynamodb.Client {
 		t.FailNow()
 	}
 
-	truncateTable(t, dbClient, &jobposting.JobPosting{})
+	truncateTable(t, dbClient, &jobposting.JobPosting{}, &company.Company{})
 	return dbClient
 }
 
