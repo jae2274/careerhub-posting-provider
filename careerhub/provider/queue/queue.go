@@ -5,7 +5,8 @@ import (
 )
 
 type Queue interface {
-	Send(message *string) error
+	Send(message []byte) error
+	Recv() ([][]byte, error)
 }
 
 type FakeQueue struct {

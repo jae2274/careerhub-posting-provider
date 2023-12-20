@@ -25,7 +25,7 @@ func TestSendJobPostingApp(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		src := jumpit.NewJumpitSource(2000)
 		src.Run(make(<-chan app.QuitSignal))
-		jobRepo, _, sendJobApp := initComponents(t, src)
+		jobRepo, _, jpQ, _, sendJobApp := initComponents(t, src)
 
 		jpIds, err := src.List(1, 3)
 		require.NoError(t, err)
@@ -34,14 +34,15 @@ func TestSendJobPostingApp(t *testing.T) {
 
 		require.NoError(t, err)
 
-		cchan.WaitClosed(processedChan)
+		results := cchan.WaitClosed(processedChan)
+		require.Len(t, results, 3)
 		if len(errChan) > 0 {
 			for {
 				select {
 				case err := <-errChan:
 					t.Log(err)
 				default:
-					t.Fail()
+					t.FailNow()
 				}
 			}
 		}
@@ -49,33 +50,30 @@ func TestSendJobPostingApp(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, savedIds, 3)
 
-		messages := getFromJobPostingQueue(t)
-		require.Len(t, messages, 3)
+		messages, err := jpQ.Recv()
+		require.NoError(t, err)
 
-	Outer:
-		for _, message := range messages {
-			for _, jpId := range jpIds {
-				if message.Site == jpId.Site && message.PostingId == jpId.PostingId {
-					continue Outer
-				}
-			}
-			t.Errorf("Not found %s %s", message.Site, message.PostingId)
-			t.FailNow()
+		jobPostingMessages := make([]message_v1.JobPostingInfo, len(messages))
+		for i, message := range messages {
+			err := proto.Unmarshal(message, &jobPostingMessages[i])
+			require.NoError(t, err)
 		}
-	})
 
+		IsEqualSrcJobPostingIds(t, jpIds, jobPostingMessages)
+		IsEqualSavedJobPostingIds(t, jpIds, savedIds)
+	})
 }
 
-func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, *company.CompanyRepo, *app.SendJobPostingApp) {
+func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, *company.CompanyRepo, queue.Queue, queue.Queue, *app.SendJobPostingApp) {
 	envVars, err := vars.Variables()
 	require.NoError(t, err)
 
 	jobRepo := tinit.InitJobPostingRepo(t)
 	companyRepo := tinit.InitCompanyRepo(t)
-	jpQueue, _, _ := tinit.InitSQS(t, envVars.JobPostingQueue)
-	companyQueue, _, _ := tinit.InitSQS(t, envVars.CompanyQueue)
+	jpQueue := tinit.InitSQS(t, envVars.JobPostingQueue)
+	companyQueue := tinit.InitSQS(t, envVars.CompanyQueue)
 
-	return jobRepo, companyRepo, app.NewSendJobPostingApp(src, jobRepo, companyRepo, queue.NewJobPostingQueue(jpQueue), queue.NewCompanyQueue(companyQueue))
+	return jobRepo, companyRepo, jpQueue, companyQueue, app.NewSendJobPostingApp(src, jobRepo, companyRepo, queue.NewJobPostingQueue(jpQueue), queue.NewCompanyQueue(companyQueue))
 }
 
 func getFromJobPostingQueue(t *testing.T) []*message_v1.JobPostingInfo {
@@ -132,4 +130,32 @@ func getAll(sqsClient *sqs.Client, queueUrl *string) ([]*message_v1.JobPostingIn
 	}
 
 	return messages, nil
+}
+
+func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, messages []message_v1.JobPostingInfo) {
+	require.Len(t, messages, len(srcJpIds))
+Outer:
+	for _, message := range messages {
+		for _, srcJpId := range srcJpIds {
+			if message.Site == srcJpId.Site && message.PostingId == srcJpId.PostingId {
+				continue Outer
+			}
+		}
+		t.Errorf("Not found %s %s", message.Site, message.PostingId)
+		t.FailNow()
+	}
+}
+
+func IsEqualSavedJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, savedJpIds []*jobposting.JobPostingId) {
+	require.Len(t, savedJpIds, len(srcJpIds))
+Outer:
+	for _, message := range savedJpIds {
+		for _, savedJpId := range srcJpIds {
+			if message.Site == savedJpId.Site && message.PostingId == savedJpId.PostingId {
+				continue Outer
+			}
+		}
+		t.Errorf("Not found %s %s", message.Site, message.PostingId)
+		t.FailNow()
+	}
 }

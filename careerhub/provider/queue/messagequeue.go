@@ -3,7 +3,6 @@ package queue
 import (
 	"careerhub-dataprovider/careerhub/provider/queue/message_v1"
 
-	"github.com/jae2274/goutils/ptr"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -23,7 +22,7 @@ func (cq *CompanyQueue) Send(message *message_v1.Company) error {
 		return err
 	}
 
-	return cq.queue.Send(ptr.P(string(b)))
+	return cq.queue.Send(b)
 }
 
 type JobPostingQueue struct {
@@ -42,7 +41,7 @@ func (jpq *JobPostingQueue) Send(message *message_v1.JobPostingInfo) error {
 		return err
 	}
 
-	return jpq.queue.Send(ptr.P(string(b)))
+	return jpq.queue.Send(b)
 }
 
 type ClosedJobPostingQueue struct {
@@ -61,5 +60,5 @@ func (cjpq *ClosedJobPostingQueue) Send(message *message_v1.ClosedJobPostings) e
 		return err
 	}
 
-	return cjpq.queue.Send(ptr.P(string(b)))
+	return cjpq.queue.Send(b)
 }

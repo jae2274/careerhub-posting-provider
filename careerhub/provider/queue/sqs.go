@@ -40,8 +40,8 @@ func NewSQS(cfg *aws.Config, endpoint *string, queueName string) (*SQS, error) {
 	}, nil
 }
 
-func (q *SQS) Send(message *string) error {
-	encodedString := base64.StdEncoding.EncodeToString([]byte(*message))
+func (q *SQS) Send(b []byte) error {
+	encodedString := base64.StdEncoding.EncodeToString(b)
 
 	_, err := q.client.SendMessage(context.Background(), &sqs.SendMessageInput{
 		MessageBody: &encodedString,
@@ -53,4 +53,29 @@ func (q *SQS) Send(message *string) error {
 	}
 
 	return nil
+}
+
+func (q *SQS) Recv() ([][]byte, error) {
+	result, err := q.client.ReceiveMessage(context.Background(), &sqs.ReceiveMessageInput{
+		QueueUrl:            &q.queueUrl,
+		MaxNumberOfMessages: 10,
+	})
+
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	var messages [][]byte
+
+	for _, message := range result.Messages {
+		decodedString, err := base64.StdEncoding.DecodeString(*message.Body)
+
+		if err != nil {
+			return nil, terr.Wrap(err)
+		}
+
+		messages = append(messages, decodedString)
+	}
+
+	return messages, nil
 }

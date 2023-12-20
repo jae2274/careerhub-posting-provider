@@ -15,7 +15,7 @@ import (
 	"github.com/jae2274/goutils/terr"
 )
 
-func InitSQS(t *testing.T, queueName string) (queue.Queue, *sqs.Client, *string) {
+func InitSQS(t *testing.T, queueName string) queue.Queue {
 	variables, err := vars.Variables()
 	checkError(t, err)
 
@@ -26,12 +26,12 @@ func InitSQS(t *testing.T, queueName string) (queue.Queue, *sqs.Client, *string)
 
 	sqsClient := queue.NewClient(cfg, sqsEndpoint)
 
-	queueUrl := truncateSQS(t, sqsClient, &queueName)
+	truncateSQS(t, sqsClient, &queueName)
 
 	queue, err := queue.NewSQS(cfg, variables.SqsEndpoint, queueName)
 	checkError(t, err)
 
-	return queue, sqsClient, queueUrl
+	return queue
 }
 
 func truncateSQS(t *testing.T, sqsClient *sqs.Client, queueName *string) *string {
