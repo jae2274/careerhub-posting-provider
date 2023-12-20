@@ -28,11 +28,11 @@ func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobpostin
 	}
 }
 
-func (s *SendJobPostingApp) Run(newIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error, error) {
+func (s *SendJobPostingApp) Run(newIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error) {
 
 	processedChan, errChan := s.createPipeline(newIds, quitChan)
 
-	return processedChan, errChan, nil
+	return processedChan, errChan
 }
 
 func (s *SendJobPostingApp) createPipeline(newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error) {

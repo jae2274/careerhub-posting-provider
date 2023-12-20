@@ -22,8 +22,7 @@ func main() {
 	checkErr(err)
 
 	quit := make(chan app.QuitSignal)
-	processedChan, errChan, err := sendInfoApp.Run(newJobPostingIds, quit)
-	checkErr(err)
+	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
 
 	timeoutQuit := make(chan app.QuitSignal)
 	errorQuit := make(chan app.QuitSignal)

@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -40,9 +41,10 @@ func NewSQS(cfg *aws.Config, endpoint *string, queueName string) (*SQS, error) {
 }
 
 func (q *SQS) Send(message *string) error {
+	encodedString := base64.StdEncoding.EncodeToString([]byte(*message))
 
 	_, err := q.client.SendMessage(context.Background(), &sqs.SendMessageInput{
-		MessageBody: message,
+		MessageBody: &encodedString,
 		QueueUrl:    &q.queueUrl,
 	})
 
