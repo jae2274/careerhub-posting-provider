@@ -21,7 +21,7 @@ import (
 
 func TestSendJobPostingApp(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
-		src := jumpit.NewJumpitSource(2000)
+		src := jumpit.NewJumpitSource(3000)
 		src.Run(make(<-chan app.QuitSignal))
 		jobRepo, companyRepo, jpQ, companyQ, sendJobApp := initComponents(t, src)
 
@@ -33,7 +33,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		require.NoError(t, err)
 
 		results := cchan.WaitClosed(processedChan)
-		require.Len(t, results, 3)
+		require.Len(t, results, len(jpIds))
 		if len(errChan) > 0 {
 			for {
 				select {
@@ -46,7 +46,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		}
 		savedIds, err := jobRepo.GetAllHiring(src.Site())
 		require.NoError(t, err)
-		require.Len(t, savedIds, 3)
+		require.Len(t, savedIds, len(jpIds))
 
 		jobPostingMessages := getJobPostingMessages(t, jpQ)
 
@@ -62,15 +62,22 @@ func TestSendJobPostingApp(t *testing.T) {
 }
 
 func getJobPostingMessages(t *testing.T, jpQ queue.Queue) []message_v1.JobPostingInfo {
-	messages, err := jpQ.Recv()
-	require.NoError(t, err)
-
-	jobPostingMessages := make([]message_v1.JobPostingInfo, len(messages))
-	for i, message := range messages {
-		err := proto.Unmarshal(message, &jobPostingMessages[i])
+	results := make([]message_v1.JobPostingInfo, 0)
+	for {
+		messages, err := jpQ.Recv()
 		require.NoError(t, err)
+
+		if len(messages) == 0 {
+			break
+		}
+		jobPostingMessages := make([]message_v1.JobPostingInfo, len(messages))
+		for i, message := range messages {
+			err := proto.Unmarshal(message, &jobPostingMessages[i])
+			require.NoError(t, err)
+		}
+		results = append(results, jobPostingMessages...)
 	}
-	return jobPostingMessages
+	return results
 }
 
 func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, *company.CompanyRepo, queue.Queue, queue.Queue, *app.SendJobPostingApp) {
@@ -114,15 +121,24 @@ Outer:
 }
 
 func getCompanyMessages(t *testing.T, companyQ queue.Queue) []message_v1.Company {
-	messages, err := companyQ.Recv()
-	require.NoError(t, err)
-
-	companyMessages := make([]message_v1.Company, len(messages))
-	for i, message := range messages {
-		err := proto.Unmarshal(message, &companyMessages[i])
+	result := make([]message_v1.Company, 0)
+	for {
+		messages, err := companyQ.Recv()
 		require.NoError(t, err)
+
+		if len(messages) == 0 {
+			break
+		}
+
+		companyMessages := make([]message_v1.Company, len(messages))
+		for i, message := range messages {
+			err := proto.Unmarshal(message, &companyMessages[i])
+			require.NoError(t, err)
+		}
+
+		result = append(result, companyMessages...)
 	}
-	return companyMessages
+	return result
 }
 
 func IsEqualSavedCompanies(t *testing.T, savedCompanies []*company.Company, companyMessages []message_v1.Company) {
