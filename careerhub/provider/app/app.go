@@ -7,7 +7,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/source"
 
-	"github.com/jae2274/goutils/cchan"
+	"github.com/jae2274/goutils/cchan/pipe"
 )
 
 type App struct {
@@ -31,101 +31,67 @@ func NewApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRe
 }
 
 func (as *App) Run(quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error, error) {
-	hiringJpIds, err := source.AllJobPostingIds(as.src)
+	separatedIds, err := as.separateIds()
 	if err != nil {
 		return nil, nil, err
 	}
-
-	savedJpIds, err := as.jobpostingRepo.GetAllHiring(as.src.Site())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	separatedIds := appfunc.SeparateIds(savedJpIds, hiringJpIds)
 
 	err = appfunc.SendClosedJobPostings(as.jobpostingRepo, as.closedJpQueue, separatedIds.ClosePostingIds)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	errChan := make(chan error, 100)
-	detailChan := callDetailApi(as.src, separatedIds.NewPostingIds, errChan, quitChan)
-	processedDetailChan := processCompany(as.src, as.companyRepo, as.companyQueue, detailChan, errChan, quitChan)
-
-	processedChan := sendJobPostingInfo(as.jobpostingRepo, as.jobPostingQueue, processedDetailChan, errChan, quitChan)
+	processedChan, errChan := as.createPipeline(separatedIds.NewPostingIds, quitChan)
 
 	return processedChan, errChan, nil
 }
 
-func callDetailApi(src source.JobPostingSource, newJpIds []*source.JobPostingId, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
-	resultChan := make(chan *source.JobPostingDetail)
+func (a *App) separateIds() (*appfunc.SeparatedIds, error) {
+	hiringJpIds, err := source.AllJobPostingIds(a.src)
+	if err != nil {
+		return nil, err
+	}
+
+	savedJpIds, err := a.jobpostingRepo.GetAllHiring(a.src.Site())
+	if err != nil {
+		return nil, err
+	}
+
+	return appfunc.SeparateIds(savedJpIds, hiringJpIds), nil
+}
+
+func (a *App) createPipeline(newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error) {
+	jobPostingIdChan := newJobPostingChan(newJpIds)
+
+	step1 := pipe.NewStep(nil,
+		func(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
+			return appfunc.CallDetail(a.src, jpId)
+		})
+	step2 := pipe.NewStep(nil,
+		func(detail *source.JobPostingDetail) (*source.JobPostingDetail, error) {
+			return detail, appfunc.ProcessCompany(a.src, a.companyRepo, a.companyQueue, &company.CompanyId{
+				Site:      detail.Site,
+				CompanyId: detail.CompanyId,
+			})
+		})
+	step3 := pipe.NewStep(nil,
+		func(detail *source.JobPostingDetail) (ProcessedSignal, error) {
+			return ProcessedSignal{}, appfunc.SendJobPostingInfo(a.jobpostingRepo, a.jobPostingQueue, detail)
+		})
+
+	return pipe.Pipeline3(jobPostingIdChan, quitChan, 100, step1, step2, step3)
+}
+
+func newJobPostingChan(newJpIds []*source.JobPostingId) <-chan *source.JobPostingId {
+	resultChan := make(chan *source.JobPostingId)
 
 	go func() {
 		defer close(resultChan)
 
 		for _, newJpId := range newJpIds {
-			detail, err := appfunc.CallDetail(src, newJpId)
-
-			ok := cchan.SendResult(detail, err, resultChan, errChan, quitChan)
-
-			if !ok {
-				return
-			}
+			resultChan <- newJpId
 		}
 	}()
 
 	return resultChan
-}
-
-func sendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue *queue.JobPostingQueue, messageChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan ProcessedSignal {
-	processedChan := make(chan ProcessedSignal, 100)
-
-	go func() {
-		defer close(processedChan)
-
-		for {
-			received, ok := cchan.ReceiveOrQuit(messageChan, quitChan)
-			if !ok {
-				return
-			}
-
-			err := appfunc.SendJobPostingInfo(jpRepo, queue, *received)
-
-			ok = cchan.SendResult(ProcessedSignal{}, err, processedChan, errChan, quitChan)
-			if !ok {
-				return
-			}
-		}
-	}()
-
-	return processedChan
-}
-
-func processCompany(src source.JobPostingSource,
-	companyRepo *company.CompanyRepo, //TODO: need to implement
-	queue *queue.CompanyQueue, detailChan <-chan *source.JobPostingDetail, errChan chan<- error, quitChan <-chan QuitSignal) <-chan *source.JobPostingDetail {
-
-	prosessedChan := make(chan *source.JobPostingDetail)
-
-	go func() {
-		for {
-			received, ok := cchan.ReceiveOrQuit(detailChan, quitChan)
-			if !ok {
-				return
-			}
-
-			detail := *received
-			err := appfunc.ProcessCompany(src, companyRepo, queue, &company.CompanyId{
-				Site:      detail.Site,
-				CompanyId: detail.CompanyId,
-			})
-
-			ok = cchan.SendResult(detail, err, prosessedChan, errChan, quitChan)
-			if !ok {
-				return
-			}
-		}
-	}()
-
-	return prosessedChan
 }

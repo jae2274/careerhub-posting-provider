@@ -112,7 +112,6 @@ func ProcessCompany(
 	companyInfo, err := companyRepo.Get(companyId)
 
 	if err != nil {
-		//TODO: error handling
 		return err
 	} else if companyInfo != nil {
 		return nil // already processed
@@ -121,7 +120,6 @@ func ProcessCompany(
 	srcCompany, err := src.Company(companyId.CompanyId)
 
 	if err != nil {
-		//TODO: error handling
 		return err
 	}
 
@@ -135,7 +133,10 @@ func ProcessCompany(
 		CompanyLogo:   srcCompany.CompanyLogo,
 	}
 
-	queue.Send(message)
+	err = queue.Send(message)
+	if err != nil {
+		return err
+	}
 
 	_, err = companyRepo.Save(company.NewCompany(src.Site(), companyId.CompanyId))
 

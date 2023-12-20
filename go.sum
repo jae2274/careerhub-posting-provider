@@ -47,6 +47,8 @@ github.com/jae2274/goutils v0.0.0-20231219043730-44e83a0526da h1:OWac5eESWh+Y8UT
 github.com/jae2274/goutils v0.0.0-20231219043730-44e83a0526da/go.mod h1:QhRKsGGzmiobUVtfCYtdXviV1nNGSGgOmjP7nCFvtHw=
 github.com/jae2274/goutils v1.0.1 h1:0qL1g4j9Tyiopk7XcNfUcdZJvOu8iZON7MN+uww+DZ4=
 github.com/jae2274/goutils v1.0.1/go.mod h1:QhRKsGGzmiobUVtfCYtdXviV1nNGSGgOmjP7nCFvtHw=
+github.com/jae2274/goutils v1.0.2 h1:zwreVlqCCCw9g0sQJ9wjAAjvpo3EVF88RX3b/RRrxjo=
+github.com/jae2274/goutils v1.0.2/go.mod h1:QhRKsGGzmiobUVtfCYtdXviV1nNGSGgOmjP7nCFvtHw=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
