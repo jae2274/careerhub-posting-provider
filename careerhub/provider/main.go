@@ -16,26 +16,51 @@ import (
 )
 
 func main() {
-	application := initApp()
-	quit := make(chan app.QuitSignal)
-	processedChan, errChan, err := application.Run(quit)
+	findNewApp, sendInfoApp := initApp()
+
+	newJobPostingIds, err := findNewApp.Run()
 	checkErr(err)
 
+	quit := make(chan app.QuitSignal)
+	processedChan, errChan, err := sendInfoApp.Run(newJobPostingIds, quit)
+	checkErr(err)
+
+	timeoutQuit := make(chan app.QuitSignal)
 	errorQuit := make(chan app.QuitSignal)
-	go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, quit)
+	go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, timeoutQuit)
 	go cchan.TooMuchError(10, 10*time.Minute, errChan, errorQuit)
 
 	select {
 	case <-errorQuit:
 		close(quit)
 		log.Fatal("Too much error")
+	case <-timeoutQuit:
+		close(quit)
+		log.Fatal("Timeout")
 	case <-quit:
 		close(errorQuit)
+		close(timeoutQuit)
 		return
 	}
 }
 
-func initApp() *app.App {
+func initApp() (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+	src, jobPostingRepo, companyRepo, jobPostingQueue, closedQueue, companyQueue := initComponents()
+
+	return app.NewFindNewJobPostingApp(
+			src,
+			jobPostingRepo,
+			closedQueue,
+		), app.NewSendJobPostingApp(
+			src,
+			jobPostingRepo,
+			companyRepo,
+			jobPostingQueue,
+			companyQueue,
+		)
+}
+
+func initComponents() (*jumpit.JumpitSource, *jobposting.JobPostingRepo, *company.CompanyRepo, *queue.JobPostingQueue, *queue.ClosedJobPostingQueue, *queue.CompanyQueue) {
 	envVars, err := vars.Variables()
 	checkErr(err)
 
@@ -62,14 +87,7 @@ func initApp() *app.App {
 	companyQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.CompanyQueue)
 	checkErr(err)
 
-	return app.NewApp(
-		src,
-		jobPostingRepo,
-		companyRepo,
-		queue.NewJobPostingQueue(jobPostingQueue),
-		queue.NewClosedJobPostingQueue(closedQueue),
-		queue.NewCompanyQueue(companyQueue),
-	)
+	return src, jobPostingRepo, companyRepo, queue.NewJobPostingQueue(jobPostingQueue), queue.NewClosedJobPostingQueue(closedQueue), queue.NewCompanyQueue(companyQueue)
 }
 
 func checkErr(err error) {
