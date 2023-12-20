@@ -1,7 +1,6 @@
 package jumpit
 
 import (
-	"careerhub-dataprovider/careerhub/provider/app"
 	"fmt"
 
 	"github.com/jae2274/goutils/apiactor"
@@ -13,14 +12,10 @@ type jumpitApiClient struct {
 	aActor *apiactor.ApiActor
 }
 
-func newJumpitApiClient(callDelay int64) *jumpitApiClient {
+func newJumpitApiClient[QUIT any](callDelay int64, quitChan <-chan QUIT) *jumpitApiClient {
 	return &jumpitApiClient{
-		aActor: apiactor.NewApiActor(callDelay),
+		aActor: apiactor.NewApiActor(callDelay, quitChan),
 	}
-}
-
-func (ja *jumpitApiClient) run(quitChan <-chan app.QuitSignal) {
-	apiactor.Run(ja.aActor, quitChan)
 }
 
 func (ja *jumpitApiClient) List(page, size int) (*postingList, error) {

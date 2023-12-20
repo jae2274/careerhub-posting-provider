@@ -16,12 +16,12 @@ import (
 )
 
 func main() {
-	findNewApp, sendInfoApp := initApp()
+	quit := make(chan app.QuitSignal)
+	findNewApp, sendInfoApp := initApp(quit)
 
 	newJobPostingIds, err := findNewApp.Run()
 	checkErr(err)
 
-	quit := make(chan app.QuitSignal)
 	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
 
 	timeoutQuit := make(chan app.QuitSignal)
@@ -43,9 +43,9 @@ func main() {
 	}
 }
 
-func initApp() (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	src, jobPostingRepo, companyRepo, jobPostingQueue, closedQueue, companyQueue := initComponents()
-
+func initApp[QUIT any](quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+	jobPostingRepo, companyRepo, jobPostingQueue, closedQueue, companyQueue := initComponents()
+	src := jumpit.NewJumpitSource(3000, quitChan)
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,
@@ -59,7 +59,7 @@ func initApp() (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
 		)
 }
 
-func initComponents() (*jumpit.JumpitSource, *jobposting.JobPostingRepo, *company.CompanyRepo, *queue.JobPostingQueue, *queue.ClosedJobPostingQueue, *queue.CompanyQueue) {
+func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, *queue.JobPostingQueue, *queue.ClosedJobPostingQueue, *queue.CompanyQueue) {
 	envVars, err := vars.Variables()
 	checkErr(err)
 
@@ -75,8 +75,6 @@ func initComponents() (*jumpit.JumpitSource, *jobposting.JobPostingRepo, *compan
 	companyRepo, err := company.NewCompanyRepo(dbClient)
 	checkErr(err)
 
-	src := jumpit.NewJumpitSource(3000)
-
 	jobPostingQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.JobPostingQueue)
 	checkErr(err)
 
@@ -86,7 +84,7 @@ func initComponents() (*jumpit.JumpitSource, *jobposting.JobPostingRepo, *compan
 	companyQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.CompanyQueue)
 	checkErr(err)
 
-	return src, jobPostingRepo, companyRepo, queue.NewJobPostingQueue(jobPostingQueue), queue.NewClosedJobPostingQueue(closedQueue), queue.NewCompanyQueue(companyQueue)
+	return jobPostingRepo, companyRepo, queue.NewJobPostingQueue(jobPostingQueue), queue.NewClosedJobPostingQueue(closedQueue), queue.NewCompanyQueue(companyQueue)
 }
 
 func checkErr(err error) {
