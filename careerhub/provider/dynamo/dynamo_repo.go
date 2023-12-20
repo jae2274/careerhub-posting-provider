@@ -84,3 +84,29 @@ func Gets[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, key
 
 	return result, nil
 }
+
+func GetAll[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context) ([]*VALUE, error) {
+	model := new(VALUE)
+
+	response, err := r.DbClient().Scan(context, &dynamodb.ScanInput{
+		TableName: (*model).TableDef().TableName,
+	})
+
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	result := make([]*VALUE, len(response.Items))
+
+	for i, item := range response.Items {
+		value := new(VALUE)
+		err = attributevalue.UnmarshalMap(item, value)
+		if err != nil {
+			return nil, terr.Wrap(err)
+		}
+
+		result[i] = value
+	}
+
+	return result, nil
+}
