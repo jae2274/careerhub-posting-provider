@@ -59,6 +59,7 @@ func TestSendJobPostingApp(t *testing.T) {
 
 		companyMessages := getCompanyMessages(t, companyQ)
 		IsEqualSavedCompanies(t, savedCompanies, companyMessages)
+		IsEqualJobPostingsAndCompanies(t, jobPostingMessages, companyMessages)
 	})
 }
 
@@ -153,5 +154,18 @@ Outer:
 		}
 		t.Errorf("Not found %s %s", companyMessage.Site, companyMessage.CompanyId)
 		t.FailNow()
+	}
+}
+
+func IsEqualJobPostingsAndCompanies(t *testing.T, jobPostingMessages []message_v1.JobPostingInfo, companyMessages []message_v1.Company) {
+	jpCompany := make(map[string]interface{})
+	for _, jobPosting := range jobPostingMessages {
+		jpCompany[jobPosting.Site+jobPosting.CompanyId] = false
+	}
+
+	for _, company := range companyMessages {
+		if _, ok := jpCompany[company.Site+company.CompanyId]; !ok {
+			require.Fail(t, "Not found %s %s", company.Site, company.CompanyId)
+		}
 	}
 }
