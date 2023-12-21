@@ -110,3 +110,29 @@ func GetAll[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context) (
 
 	return result, nil
 }
+
+func Deletes[KEY any, VALUE Model](r Repo[KEY, VALUE], context context.Context, keys []map[string]types.AttributeValue) error {
+	model := new(VALUE)
+
+	writeRequests := make([]types.WriteRequest, len(keys))
+	for i, key := range keys {
+		writeRequests[i] = types.WriteRequest{
+			DeleteRequest: &types.DeleteRequest{
+				Key: key,
+			},
+		}
+	}
+
+	input := &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]types.WriteRequest{
+			*(*model).TableDef().TableName: writeRequests,
+		},
+	}
+
+	_, err := r.DbClient().BatchWriteItem(context, input)
+	if err != nil {
+		return terr.Wrap(err)
+	}
+
+	return nil
+}

@@ -100,6 +100,15 @@ func (jpr *JobPostingRepo) GetAllHiring(site string) ([]*JobPostingId, error) {
 	return jobPostingIds, nil
 }
 
+func (jpr *JobPostingRepo) DeleteAll(ids []*JobPostingId) error {
+	keys := make([]map[string]types.AttributeValue, len(ids))
+	for i, id := range ids {
+		keys[i] = newKey(id.Site, id.PostingId)
+	}
+
+	return dynamo.Deletes(jpr, context.TODO(), keys)
+}
+
 func (jpr *JobPostingRepo) DbClient() *dynamodb.Client {
 	return jpr.dbClient
 }

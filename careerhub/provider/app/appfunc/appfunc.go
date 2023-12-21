@@ -64,7 +64,7 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue *queue.Close
 	queue.Send(message)
 
 	//TODO: delete closed job postings
-	// jpRepo.DeleteAll(closedJpIds)
+	jpRepo.DeleteAll(closedJpIds)
 
 	return nil
 }
