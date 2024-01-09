@@ -1,76 +1,70 @@
 package tinit
 
 import (
-	awsconfig "careerhub-dataprovider/careerhub/provider/awscfg"
-	"careerhub-dataprovider/careerhub/provider/queue"
+	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/jae2274/goutils/terr"
+	"google.golang.org/grpc"
 )
 
-func InitSQS(t *testing.T, queueName string) queue.Queue {
+type MockGrpcClient interface {
+	processor_grpc.DataProcessorClient
+	GetClosedJpIds() []*processor_grpc.JobPostings
+	GetJobPostingInfo() []*processor_grpc.JobPostingInfo
+	GetCompany() []*processor_grpc.Company
+}
+
+type MockGrpcClientImpl struct {
+	JobPostingInfos []*processor_grpc.JobPostingInfo
+	JobPostings     []*processor_grpc.JobPostings
+	Companies       []*processor_grpc.Company
+}
+
+func (m *MockGrpcClientImpl) CloseJobPostings(ctx context.Context, in *processor_grpc.JobPostings, opts ...grpc.CallOption) (*processor_grpc.BoolResponse, error) {
+	m.JobPostings = append(m.JobPostings, in)
+	return &processor_grpc.BoolResponse{Success: true}, nil
+}
+
+func (m *MockGrpcClientImpl) RegisterJobPostingInfo(ctx context.Context, in *processor_grpc.JobPostingInfo, opts ...grpc.CallOption) (*processor_grpc.BoolResponse, error) {
+	m.JobPostingInfos = append(m.JobPostingInfos, in)
+	return &processor_grpc.BoolResponse{Success: true}, nil
+}
+
+func (m *MockGrpcClientImpl) RegisterCompany(ctx context.Context, in *processor_grpc.Company, opts ...grpc.CallOption) (*processor_grpc.BoolResponse, error) {
+	m.Companies = append(m.Companies, in)
+	return &processor_grpc.BoolResponse{Success: true}, nil
+}
+
+func (m *MockGrpcClientImpl) GetClosedJpIds() []*processor_grpc.JobPostings {
+	return m.JobPostings
+}
+
+func (m *MockGrpcClientImpl) GetJobPostingInfo() []*processor_grpc.JobPostingInfo {
+	return m.JobPostingInfos
+}
+
+func (m *MockGrpcClientImpl) GetCompany() []*processor_grpc.Company {
+	return m.Companies
+}
+
+func InitGrpcClient(t *testing.T) MockGrpcClient {
 	variables, err := vars.Variables()
 	checkError(t, err)
 
-	sqsEndpoint := variables.SqsEndpoint
-
-	cfg, err := awsconfig.Config()
-	checkError(t, err)
-
-	sqsClient := queue.NewClient(cfg, sqsEndpoint)
-
-	truncateSQS(t, sqsClient, &queueName)
-
-	queue, err := queue.NewSQS(cfg, variables.SqsEndpoint, queueName)
-	checkError(t, err)
-
-	return queue
-}
-
-func truncateSQS(t *testing.T, sqsClient *sqs.Client, queueName *string) *string {
-	queueUrl := getQueueUrl(t, sqsClient, queueName)
-	if queueUrl != nil {
-		deleteQueue(t, sqsClient, queueUrl)
+	if variables.GrpcEndpoint == "" {
+		t.Fatal("GRPC_ENDPOINT is not set")
+		t.FailNow()
 	}
-	createQueue(t, sqsClient, queueName)
-	return getQueueUrl(t, sqsClient, queueName)
-}
 
-func getQueueUrl(t *testing.T, sqsClient *sqs.Client, queueName *string) *string {
-	result, err := sqsClient.GetQueueUrl(
-		context.Background(),
-		&sqs.GetQueueUrlInput{
-			QueueName: queueName,
-		},
-	)
-
-	var notExisted *types.QueueDoesNotExist
-	if errors.As(terr.UnWrap(err), &notExisted) {
-		return nil
+	return &MockGrpcClientImpl{
+		JobPostingInfos: make([]*processor_grpc.JobPostingInfo, 0),
+		JobPostings:     make([]*processor_grpc.JobPostings, 0),
+		Companies:       make([]*processor_grpc.Company, 0),
 	}
-	checkError(t, err)
-	return result.QueueUrl
-}
-
-func deleteQueue(t *testing.T, sqsClient *sqs.Client, queueUrl *string) {
-	_, err := sqsClient.DeleteQueue(context.Background(), &sqs.DeleteQueueInput{
-		QueueUrl: queueUrl,
-	})
-	checkError(t, err)
-}
-
-func createQueue(t *testing.T, sqsClient *sqs.Client, queueName *string) {
-	_, err := sqsClient.CreateQueue(context.Background(), &sqs.CreateQueueInput{
-		QueueName: queueName,
-	})
-	checkError(t, err)
 }
 
 func checkError(t *testing.T, err error) {
