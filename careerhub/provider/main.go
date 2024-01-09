@@ -6,13 +6,13 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/dynamo"
-	"careerhub-dataprovider/careerhub/provider/queue"
+	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"log"
-	"time"
+	"sync"
 
-	"github.com/jae2274/goutils/cchan"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -24,42 +24,58 @@ func main() {
 
 	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
 
-	timeoutQuit := make(chan app.QuitSignal)
-	errorQuit := make(chan app.QuitSignal)
-	go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, timeoutQuit)
-	go cchan.TooMuchError(10, 10*time.Minute, errChan, errorQuit)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for err := range errChan {
+			log.Println(err)
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for processed := range processedChan {
+			log.Println(processed)
+		}
+	}()
 
-	select {
-	case <-errorQuit:
-		close(quit)
-		log.Fatal("Too much error")
-	case <-timeoutQuit:
-		close(quit)
-		log.Fatal("Timeout")
-	case <-quit:
-		close(errorQuit)
-		close(timeoutQuit)
-		return
-	}
+	wg.Wait()
+	// timeoutQuit := make(chan app.QuitSignal)
+	// errorQuit := make(chan app.QuitSignal)
+	// go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, timeoutQuit)
+	// go cchan.TooMuchError(10, 10*time.Minute, errChan, errorQuit)
+
+	// select {
+	// case <-errorQuit:
+	// 	close(quit)
+	// 	log.Fatal("Too much error")
+	// case <-timeoutQuit:
+	// 	close(quit)
+	// 	log.Fatal("Timeout")
+	// case <-quit:
+	// 	close(errorQuit)
+	// 	close(timeoutQuit)
+	// 	return
+	// }
 }
 
 func initApp[QUIT any](quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	jobPostingRepo, companyRepo, jobPostingQueue, closedQueue, companyQueue := initComponents()
+	jobPostingRepo, companyRepo, grpcClient := initComponents()
 	src := jumpit.NewJumpitSource(3000, quitChan)
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,
-			closedQueue,
+			grpcClient,
 		), app.NewSendJobPostingApp(
 			src,
 			jobPostingRepo,
 			companyRepo,
-			jobPostingQueue,
-			companyQueue,
+			grpcClient,
 		)
 }
 
-func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, *queue.JobPostingQueue, *queue.ClosedJobPostingQueue, *queue.CompanyQueue) {
+func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
 	envVars, err := vars.Variables()
 	checkErr(err)
 
@@ -75,16 +91,13 @@ func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, *queue.
 	companyRepo, err := company.NewCompanyRepo(dbClient)
 	checkErr(err)
 
-	jobPostingQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.JobPostingQueue)
+	var opts []grpc.DialOption
+	conn, err := grpc.Dial(envVars.GrpcEndpoint, opts...)
 	checkErr(err)
 
-	closedQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.ClosedQueue)
-	checkErr(err)
+	grpcClient := processor_grpc.NewDataProcessorClient(conn)
 
-	companyQueue, err := queue.NewSQS(awsConfig, envVars.SqsEndpoint, envVars.CompanyQueue)
-	checkErr(err)
-
-	return jobPostingRepo, companyRepo, queue.NewJobPostingQueue(jobPostingQueue), queue.NewClosedJobPostingQueue(closedQueue), queue.NewCompanyQueue(companyQueue)
+	return jobPostingRepo, companyRepo, grpcClient
 }
 
 func checkErr(err error) {

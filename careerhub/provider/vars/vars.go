@@ -6,11 +6,8 @@ import (
 )
 
 type Vars struct {
-	DbEndpoint      *string
-	SqsEndpoint     *string
-	JobPostingQueue string
-	ClosedQueue     string
-	CompanyQueue    string
+	DbEndpoint   *string
+	GrpcEndpoint string
 }
 
 type ErrNotExistedVar struct {
@@ -29,29 +26,14 @@ func Variables() (*Vars, error) {
 
 	dbEndpoint := getFromEnvPtr("DB_ENDPOINT")
 
-	sqsEndpoint := getFromEnvPtr("SQS_ENDPOINT")
-
-	companyQueue, err := getFromEnv("COMPANY_QUEUE")
-	if err != nil {
-		return nil, err
-	}
-
-	jobPostingQueue, err := getFromEnv("JOB_POSTING_QUEUE")
-	if err != nil {
-		return nil, err
-	}
-
-	closedQueue, err := getFromEnv("CLOSED_QUEUE")
+	grpcEndpoint, err := getFromEnv("GRPC_ENDPOINT")
 	if err != nil {
 		return nil, err
 	}
 
 	return &Vars{
-		DbEndpoint:      dbEndpoint,
-		SqsEndpoint:     sqsEndpoint,
-		JobPostingQueue: jobPostingQueue,
-		ClosedQueue:     closedQueue,
-		CompanyQueue:    companyQueue,
+		DbEndpoint:   dbEndpoint,
+		GrpcEndpoint: grpcEndpoint,
 	}, nil
 }
 
