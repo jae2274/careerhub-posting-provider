@@ -101,6 +101,10 @@ func (jpr *JobPostingRepo) GetAllHiring(site string) ([]*JobPostingId, error) {
 }
 
 func (jpr *JobPostingRepo) DeleteAll(ids []*JobPostingId) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
 	keys := make([]map[string]types.AttributeValue, len(ids))
 	for i, id := range ids {
 		keys[i] = newKey(id.Site, id.PostingId)

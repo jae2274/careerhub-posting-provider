@@ -10,6 +10,4 @@ func TestReset(t *testing.T) {
 	tinit.InitJobPostingRepo(t)
 
 	tinit.InitGrpcClient(t)
-	tinit.InitGrpcClient(t)
-	tinit.InitGrpcClient(t)
 }

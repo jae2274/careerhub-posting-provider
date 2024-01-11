@@ -99,7 +99,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 		PublishedAt: detail.PublishedAt,
 		ClosedAt:    detail.ClosedAt,
 		Address:     detail.Address,
-		CreatedAt:   time.Now().Unix(),
+		CreatedAt:   time.Now().UnixMilli(),
 	}
 
 	_, err := grpcClient.RegisterJobPostingInfo(context.TODO(), message)
@@ -140,6 +140,7 @@ func ProcessCompany(
 		CompanyImages: srcCompany.CompanyImages,
 		Description:   srcCompany.Description,
 		CompanyLogo:   srcCompany.CompanyLogo,
+		CreatedAt:     time.Now().UnixMilli(),
 	}
 
 	_, err = grpcClient.RegisterCompany(context.TODO(), message)
