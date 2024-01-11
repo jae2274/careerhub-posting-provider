@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -91,8 +92,7 @@ func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, process
 	companyRepo, err := company.NewCompanyRepo(dbClient)
 	checkErr(err)
 
-	var opts []grpc.DialOption
-	conn, err := grpc.Dial(envVars.GrpcEndpoint, opts...)
+	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	checkErr(err)
 
 	grpcClient := processor_grpc.NewDataProcessorClient(conn)

@@ -6,6 +6,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
+	"time"
 )
 
 type SeparatedIds struct {
@@ -98,6 +99,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 		PublishedAt: detail.PublishedAt,
 		ClosedAt:    detail.ClosedAt,
 		Address:     detail.Address,
+		CreatedAt:   time.Now().Unix(),
 	}
 
 	_, err := grpcClient.RegisterJobPostingInfo(context.TODO(), message)

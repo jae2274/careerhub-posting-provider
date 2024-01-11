@@ -12,7 +12,7 @@ build:
 ## run: builds and runs the application
 run: build
 	@echo "Starting..."
-	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} ./${BINARY_NAME} 
+	@env DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} ./${BINARY_NAME} 
 	@echo "Started!"
 
 ## clean: runs go clean and deletes binaries
@@ -41,6 +41,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env API_KEY=${API_KEY} DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} go test -p 1 -timeout 60s ./test/...
+	@env DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} go test -p 1 -timeout 60s ./test/...
 	
 
