@@ -75,8 +75,10 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient process
 
 func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_grpc.DataProcessorClient, detail *source.JobPostingDetail) error {
 	message := &processor_grpc.JobPostingInfo{
-		Site:        detail.Site,
-		PostingId:   detail.PostingId,
+		JobPostingId: &processor_grpc.JobPostingId{
+			Site:      detail.Site,
+			PostingId: detail.PostingId,
+		},
 		CompanyId:   detail.CompanyId,
 		CompanyName: detail.CompanyName,
 		JobCategory: detail.JobCategory,
@@ -107,7 +109,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 		return err
 	}
 
-	_, err = jpRepo.Save(jobposting.NewJobPosting(message.Site, message.PostingId))
+	_, err = jpRepo.Save(jobposting.NewJobPosting(message.JobPostingId.Site, message.JobPostingId.PostingId))
 	return err
 }
 

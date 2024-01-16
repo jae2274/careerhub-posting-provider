@@ -73,11 +73,11 @@ func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, jobP
 Outer:
 	for _, jobPostingMessage := range jobPostingMessages {
 		for _, srcJpId := range srcJpIds {
-			if jobPostingMessage.Site == srcJpId.Site && jobPostingMessage.PostingId == srcJpId.PostingId {
+			if jobPostingMessage.JobPostingId.Site == srcJpId.Site && jobPostingMessage.JobPostingId.PostingId == srcJpId.PostingId {
 				continue Outer
 			}
 		}
-		t.Errorf("Not found %s %s", jobPostingMessage.Site, jobPostingMessage.PostingId)
+		t.Errorf("Not found %s %s", jobPostingMessage.JobPostingId.Site, jobPostingMessage.JobPostingId.PostingId)
 		t.FailNow()
 	}
 }
@@ -113,7 +113,7 @@ Outer:
 func IsEqualJobPostingsAndCompanies(t *testing.T, jobPostingMessages []*processor_grpc.JobPostingInfo, companyMessages []*processor_grpc.Company) {
 	jpCompany := make(map[string]interface{})
 	for _, jobPosting := range jobPostingMessages {
-		jpCompany[jobPosting.Site+jobPosting.CompanyId] = false
+		jpCompany[jobPosting.JobPostingId.Site+jobPosting.CompanyId] = false
 	}
 
 	for _, company := range companyMessages {
