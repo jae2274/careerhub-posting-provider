@@ -1,5 +1,6 @@
 package main
 
+//aws pipeline trigger
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/awscfg"
