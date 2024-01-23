@@ -11,6 +11,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"log"
+	"os"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -103,6 +104,7 @@ func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, process
 
 func checkErr(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		os.Exit(1)
 	}
 }
