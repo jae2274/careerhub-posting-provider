@@ -4,27 +4,25 @@ import (
 	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/queue"
+	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 
 	"github.com/jae2274/goutils/cchan/pipe"
 )
 
 type SendJobPostingApp struct {
-	src             source.JobPostingSource
-	jobpostingRepo  *jobposting.JobPostingRepo
-	companyRepo     *company.CompanyRepo
-	jobPostingQueue *queue.JobPostingQueue
-	companyQueue    *queue.CompanyQueue
+	src            source.JobPostingSource
+	jobpostingRepo *jobposting.JobPostingRepo
+	companyRepo    *company.CompanyRepo
+	grpcClient     processor_grpc.DataProcessorClient
 }
 
-func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, jobPostingQueue *queue.JobPostingQueue, companyQueue *queue.CompanyQueue) *SendJobPostingApp {
+func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcClient processor_grpc.DataProcessorClient) *SendJobPostingApp {
 	return &SendJobPostingApp{
-		src:             src,
-		jobpostingRepo:  jobpostingRepo,
-		companyRepo:     companyRepo,
-		jobPostingQueue: jobPostingQueue,
-		companyQueue:    companyQueue,
+		src:            src,
+		jobpostingRepo: jobpostingRepo,
+		companyRepo:    companyRepo,
+		grpcClient:     grpcClient,
 	}
 }
 
@@ -44,14 +42,14 @@ func (s *SendJobPostingApp) createPipeline(newJpIds []*source.JobPostingId, quit
 		})
 	step2 := pipe.NewStep(nil,
 		func(detail *source.JobPostingDetail) (*source.JobPostingDetail, error) {
-			return detail, appfunc.ProcessCompany(s.src, s.companyRepo, s.companyQueue, &company.CompanyId{
+			return detail, appfunc.ProcessCompany(s.src, s.companyRepo, s.grpcClient, &company.CompanyId{
 				Site:      detail.Site,
 				CompanyId: detail.CompanyId,
 			})
 		})
 	step3 := pipe.NewStep(nil,
 		func(detail *source.JobPostingDetail) (ProcessedSignal, error) {
-			return ProcessedSignal{}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.jobPostingQueue, detail)
+			return ProcessedSignal{}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.grpcClient, detail)
 		})
 
 	errChan := make(chan error, 100)

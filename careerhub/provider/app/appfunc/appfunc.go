@@ -3,9 +3,10 @@ package appfunc
 import (
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/queue"
-	"careerhub-dataprovider/careerhub/provider/queue/message_v1"
+	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
+	"context"
+	"time"
 )
 
 type SeparatedIds struct {
@@ -47,36 +48,41 @@ func CallDetail(src source.JobPostingSource, jpId *source.JobPostingId) (*source
 	return src.Detail(jpId)
 }
 
-func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, queue *queue.ClosedJobPostingQueue, closedJpIds []*jobposting.JobPostingId) error {
-	closedJpIdMessages := make([]*message_v1.JobPostingId, len(closedJpIds))
+func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient processor_grpc.DataProcessorClient, closedJpIds []*jobposting.JobPostingId) error {
+
+	closedJpIdMessages := make([]*processor_grpc.JobPostingId, len(closedJpIds))
 
 	for i, closedJpId := range closedJpIds {
-		closedJpIdMessages[i] = &message_v1.JobPostingId{
+		closedJpIdMessages[i] = &processor_grpc.JobPostingId{
 			Site:      closedJpId.Site,
 			PostingId: closedJpId.PostingId,
 		}
 	}
 
-	message := &message_v1.ClosedJobPostings{
+	message := &processor_grpc.JobPostings{
 		JobPostingIds: closedJpIdMessages,
 	}
 
-	queue.Send(message)
+	_, err := grpcClient.CloseJobPostings(context.TODO(), message)
+	if err != nil {
+		return err
+	}
 
 	//TODO: delete closed job postings
-	jpRepo.DeleteAll(closedJpIds)
 
-	return nil
+	return jpRepo.DeleteAll(closedJpIds)
 }
 
-func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue *queue.JobPostingQueue, detail *source.JobPostingDetail) error {
-	message := &message_v1.JobPostingInfo{
-		Site:        detail.Site,
-		PostingId:   detail.PostingId,
+func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_grpc.DataProcessorClient, detail *source.JobPostingDetail) error {
+	message := &processor_grpc.JobPostingInfo{
+		JobPostingId: &processor_grpc.JobPostingId{
+			Site:      detail.Site,
+			PostingId: detail.PostingId,
+		},
 		CompanyId:   detail.CompanyId,
 		CompanyName: detail.CompanyName,
 		JobCategory: detail.JobCategory,
-		MainContent: &message_v1.MainContent{
+		MainContent: &processor_grpc.MainContent{
 			PostUrl:        detail.MainContent.PostUrl,
 			Title:          detail.MainContent.Title,
 			Intro:          detail.MainContent.Intro,
@@ -88,24 +94,29 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, queue *queue.JobPosti
 		},
 		RequiredSkill: detail.RequiredSkill,
 		Tags:          detail.Tags,
-		RequiredCareer: &message_v1.Career{
+		RequiredCareer: &processor_grpc.Career{
 			Min: detail.RequiredCareer.Min,
 			Max: detail.RequiredCareer.Max,
 		},
 		PublishedAt: detail.PublishedAt,
 		ClosedAt:    detail.ClosedAt,
 		Address:     detail.Address,
+		CreatedAt:   time.Now().UnixMilli(),
 	}
 
-	queue.Send(message)
-	_, err := jpRepo.Save(jobposting.NewJobPosting(message.Site, message.PostingId))
+	_, err := grpcClient.RegisterJobPostingInfo(context.TODO(), message)
+	if err != nil {
+		return err
+	}
+
+	_, err = jpRepo.Save(jobposting.NewJobPosting(message.JobPostingId.Site, message.JobPostingId.PostingId))
 	return err
 }
 
 func ProcessCompany(
 	src source.JobPostingSource,
 	companyRepo *company.CompanyRepo, //TODO: need to implement
-	queue *queue.CompanyQueue,
+	grpcClient processor_grpc.DataProcessorClient,
 	companyId *company.CompanyId,
 ) error {
 
@@ -123,7 +134,7 @@ func ProcessCompany(
 		return err
 	}
 
-	message := &message_v1.Company{
+	message := &processor_grpc.Company{
 		Site:          srcCompany.Site,
 		CompanyId:     srcCompany.CompanyId,
 		Name:          srcCompany.Name,
@@ -131,9 +142,10 @@ func ProcessCompany(
 		CompanyImages: srcCompany.CompanyImages,
 		Description:   srcCompany.Description,
 		CompanyLogo:   srcCompany.CompanyLogo,
+		CreatedAt:     time.Now().UnixMilli(),
 	}
 
-	err = queue.Send(message)
+	_, err = grpcClient.RegisterCompany(context.TODO(), message)
 	if err != nil {
 		return err
 	}

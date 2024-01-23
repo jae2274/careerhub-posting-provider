@@ -3,21 +3,21 @@ package app
 import (
 	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/queue"
+	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 )
 
 type FindNewJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
-	closedJpQueue  *queue.ClosedJobPostingQueue
+	grpcClient     processor_grpc.DataProcessorClient
 }
 
-func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, closedJpQueue *queue.ClosedJobPostingQueue) *FindNewJobPostingApp {
+func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, closedJpQueue processor_grpc.DataProcessorClient) *FindNewJobPostingApp {
 	return &FindNewJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,
-		closedJpQueue:  closedJpQueue,
+		grpcClient:     closedJpQueue,
 	}
 }
 
@@ -27,7 +27,7 @@ func (f *FindNewJobPostingApp) Run() ([]*source.JobPostingId, error) {
 		return nil, err
 	}
 
-	err = appfunc.SendClosedJobPostings(f.jobpostingRepo, f.closedJpQueue, separatedIds.ClosePostingIds)
+	err = appfunc.SendClosedJobPostings(f.jobpostingRepo, f.grpcClient, separatedIds.ClosePostingIds)
 	if err != nil {
 		return nil, err
 	}
