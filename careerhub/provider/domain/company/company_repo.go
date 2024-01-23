@@ -3,7 +3,6 @@ package company
 import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -20,7 +19,6 @@ func NewCompanyRepo(dbClient *dynamodb.Client) (*CompanyRepo, error) {
 	err := dynamo.CheckValidTable(dbClient, &model)
 
 	if err != nil {
-		fmt.Printf("Error checking match table: %v", err)
 		return nil, err
 	}
 

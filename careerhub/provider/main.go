@@ -10,20 +10,23 @@ import (
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
+	"context"
 	"log"
 	"os"
 	"sync"
 
+	"github.com/jae2274/goutils/llog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
+	ctx := context.Background()
 	quit := make(chan app.QuitSignal)
-	findNewApp, sendInfoApp := initApp(quit)
+	findNewApp, sendInfoApp := initApp(ctx, quit)
 
 	newJobPostingIds, err := findNewApp.Run()
-	checkErr(err)
+	checkErr(ctx, err)
 
 	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
 
@@ -63,8 +66,8 @@ func main() {
 	// }
 }
 
-func initApp[QUIT any](quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	jobPostingRepo, companyRepo, grpcClient := initComponents()
+func initApp[QUIT any](ctx context.Context, quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx)
 	src := jumpit.NewJumpitSource(3000, quitChan)
 	return app.NewFindNewJobPostingApp(
 			src,
@@ -78,33 +81,33 @@ func initApp[QUIT any](quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.Se
 		)
 }
 
-func initComponents() (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
+func initComponents(ctx context.Context) (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
 	envVars, err := vars.Variables()
-	checkErr(err)
+	checkErr(ctx, err)
 
 	awsConfig, err := awscfg.Config()
-	checkErr(err)
+	checkErr(ctx, err)
 
 	dbClient, err := dynamo.NewDbClient(awsConfig, envVars.DbEndpoint)
-	checkErr(err)
+	checkErr(ctx, err)
 
 	jobPostingRepo, err := jobposting.NewJobPostingRepo(dbClient)
-	checkErr(err)
+	checkErr(ctx, err)
 
 	companyRepo, err := company.NewCompanyRepo(dbClient)
-	checkErr(err)
+	checkErr(ctx, err)
 
 	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	checkErr(err)
+	checkErr(ctx, err)
 
 	grpcClient := processor_grpc.NewDataProcessorClient(conn)
 
 	return jobPostingRepo, companyRepo, grpcClient
 }
 
-func checkErr(err error) {
+func checkErr(ctx context.Context, err error) {
 	if err != nil {
-		log.Println(err)
+		llog.LogErr(ctx, err)
 		os.Exit(1)
 	}
 }

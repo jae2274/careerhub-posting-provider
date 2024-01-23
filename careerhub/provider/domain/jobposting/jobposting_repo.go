@@ -3,7 +3,6 @@ package jobposting
 import (
 	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -40,7 +39,6 @@ func NewJobPostingRepo(dbClient *dynamodb.Client) (*JobPostingRepo, error) {
 	err := dynamo.CheckValidTable(dbClient, &jobPostingModel)
 
 	if err != nil {
-		fmt.Printf("Error checking match table: %v", err)
 		return nil, err
 	}
 

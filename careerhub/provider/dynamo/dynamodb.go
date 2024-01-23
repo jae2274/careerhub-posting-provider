@@ -37,8 +37,6 @@ func CheckValidTable(dbClient *dynamodb.Client, model Model) error {
 	}
 
 	if !compareTableDef(tableDef, desc.Table) {
-		fmt.Println("TableDef: ", tableDef)
-		fmt.Println("Desc: ", desc.Table)
 		return fmt.Errorf("table %s is not matched", *(tableDef.TableName))
 	}
 	return nil
