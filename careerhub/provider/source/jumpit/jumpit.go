@@ -21,7 +21,7 @@ func (s *JumpitSource) Site() string {
 }
 
 func (s *JumpitSource) MaxPageSize() int {
-	return 500
+	return 300
 }
 
 func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {

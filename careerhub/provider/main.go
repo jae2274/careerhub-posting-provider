@@ -57,7 +57,7 @@ func main() {
 
 func initApp[QUIT any](ctx context.Context, quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
 	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx)
-	src := jumpit.NewJumpitSource(3000, quitChan)
+	src := jumpit.NewJumpitSource(6000, quitChan)
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,
