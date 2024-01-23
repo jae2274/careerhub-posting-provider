@@ -49,7 +49,7 @@ func (s *SendJobPostingApp) createPipeline(newJpIds []*source.JobPostingId, quit
 		})
 	step3 := pipe.NewStep(nil,
 		func(detail *source.JobPostingDetail) (ProcessedSignal, error) {
-			return ProcessedSignal{}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.grpcClient, detail)
+			return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.grpcClient, detail)
 		})
 
 	errChan := make(chan error, 100)

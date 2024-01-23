@@ -13,8 +13,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"sync"
+	"time"
 
+	"github.com/jae2274/goutils/cchan"
+	"github.com/jae2274/goutils/cchan/pipe"
 	"github.com/jae2274/goutils/llog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,45 +27,32 @@ func main() {
 	quit := make(chan app.QuitSignal)
 	findNewApp, sendInfoApp := initApp(ctx, quit)
 
+	llog.Msg("Start finding new job postings").Log(ctx)
 	newJobPostingIds, err := findNewApp.Run()
 	checkErr(ctx, err)
+	llog.Msg("End finding new job postings").Data("jobPostingCount", len(newJobPostingIds)).Log(ctx)
 
+	llog.Msg("Start getting and sending job posting infos").Log(ctx)
 	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
+	loggedProcessedChan, loggedErrChan := justLog(ctx, processedChan, errChan, quit)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for err := range errChan {
-			log.Println(err)
-		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for processed := range processedChan {
-			log.Println(processed)
-		}
-	}()
+	timeoutQuit := make(chan app.QuitSignal)
+	errorQuit := make(chan app.QuitSignal)
+	go cchan.Timeout(10*time.Minute, 10*time.Minute, loggedProcessedChan, timeoutQuit)
+	go cchan.TooMuchError(10, 10*time.Minute, loggedErrChan, errorQuit)
 
-	wg.Wait()
-	// timeoutQuit := make(chan app.QuitSignal)
-	// errorQuit := make(chan app.QuitSignal)
-	// go cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, timeoutQuit)
-	// go cchan.TooMuchError(10, 10*time.Minute, errChan, errorQuit)
-
-	// select {
-	// case <-errorQuit:
-	// 	close(quit)
-	// 	log.Fatal("Too much error")
-	// case <-timeoutQuit:
-	// 	close(quit)
-	// 	log.Fatal("Timeout")
-	// case <-quit:
-	// 	close(errorQuit)
-	// 	close(timeoutQuit)
-	// 	return
-	// }
+	select {
+	case <-errorQuit:
+		close(quit)
+		log.Fatal("Too much error")
+	case <-timeoutQuit:
+		close(quit)
+		log.Fatal("Timeout")
+	case <-quit:
+		close(errorQuit)
+		close(timeoutQuit)
+		return
+	}
 }
 
 func initApp[QUIT any](ctx context.Context, quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
@@ -110,4 +99,16 @@ func checkErr(ctx context.Context, err error) {
 		llog.LogErr(ctx, err)
 		os.Exit(1)
 	}
+}
+
+func justLog(ctx context.Context, processedChan <-chan app.ProcessedSignal, errChan <-chan error, quitChan <-chan app.QuitSignal) (<-chan app.ProcessedSignal, <-chan error) {
+	loggedProcessedChan := pipe.PassThrough(processedChan, quitChan, func(signal app.ProcessedSignal) {
+		llog.Msg("Processed").Data("site", signal.Site).Data("postingId", signal.PostingId).Log(ctx)
+	})
+
+	loggedErrChan := pipe.PassThrough(errChan, quitChan, func(err error) {
+		llog.LogErr(ctx, err)
+	})
+
+	return loggedProcessedChan, loggedErrChan
 }
