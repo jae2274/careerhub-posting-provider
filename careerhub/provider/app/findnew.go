@@ -5,6 +5,9 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
+	"context"
+
+	"github.com/jae2274/goutils/llog"
 )
 
 type FindNewJobPostingApp struct {
@@ -21,11 +24,19 @@ func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobpos
 	}
 }
 
-func (f *FindNewJobPostingApp) Run() ([]*source.JobPostingId, error) {
+func (f *FindNewJobPostingApp) Run(ctx context.Context) ([]*source.JobPostingId, error) {
+	llog.Msg("Start finding new job postings").Log(ctx)
 	separatedIds, err := f.separateIds()
 	if err != nil {
 		return nil, err
 	}
+	llog.Msg("End finding new job postings").Datas(
+		map[string]any{
+			"totalCount":         separatedIds.TotalCount,
+			"newPostingCount":    len(separatedIds.NewPostingIds),
+			"closedPostingCount": len(separatedIds.ClosePostingIds),
+		},
+	).Log(ctx)
 
 	err = appfunc.SendClosedJobPostings(f.jobpostingRepo, f.grpcClient, separatedIds.ClosePostingIds)
 	if err != nil {

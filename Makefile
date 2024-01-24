@@ -41,6 +41,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} go test -p 1 -timeout 60s ./test/...
+	@env DB_ENDPOINT=${DB_ENDPOINT} GRPC_ENDPOINT=${GRPC_ENDPOINT} go test -p 1 -timeout 300s ./test/...
 	
 

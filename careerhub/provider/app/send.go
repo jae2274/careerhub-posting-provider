@@ -6,6 +6,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
+	"context"
 
 	"github.com/jae2274/goutils/cchan/pipe"
 )
@@ -26,14 +27,14 @@ func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobpostin
 	}
 }
 
-func (s *SendJobPostingApp) Run(newIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error) {
+func (s *SendJobPostingApp) Run(ctx context.Context, newIds []*source.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
 
-	processedChan, errChan := s.createPipeline(newIds, quitChan)
+	processedChan, errChan := s.createPipeline(ctx, newIds)
 
 	return processedChan, errChan
 }
 
-func (s *SendJobPostingApp) createPipeline(newJpIds []*source.JobPostingId, quitChan <-chan QuitSignal) (<-chan ProcessedSignal, <-chan error) {
+func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*source.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
 	jobPostingIdChan := newJobPostingChan(newJpIds)
 
 	step1 := pipe.NewStep(nil,
@@ -53,7 +54,7 @@ func (s *SendJobPostingApp) createPipeline(newJpIds []*source.JobPostingId, quit
 		})
 
 	errChan := make(chan error, 100)
-	return pipe.Pipeline3(jobPostingIdChan, errChan, quitChan, step1, step2, step3), errChan
+	return pipe.Pipeline3(ctx, jobPostingIdChan, errChan, step1, step2, step3), errChan
 }
 
 func newJobPostingChan(newJpIds []*source.JobPostingId) <-chan *source.JobPostingId {

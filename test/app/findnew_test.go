@@ -17,9 +17,8 @@ import (
 )
 
 func TestFindNew(t *testing.T) {
-
-	quitChan := make(chan app.QuitSignal)
-	src := jumpit.NewJumpitSource(3000, quitChan)
+	ctx := context.Background()
+	src := jumpit.NewJumpitSource(ctx, 3000)
 	jobRepo, ClosedQueue, findNewJobPostingApp := initFindNewComponents(t, src)
 
 	allJpId, err := source.AllJobPostingIds(src)
@@ -41,7 +40,7 @@ func TestFindNew(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	newJpIds, err := findNewJobPostingApp.Run()
+	newJpIds, err := findNewJobPostingApp.Run(ctx)
 	require.NoError(t, err)
 
 	require.Equal(t, allJpId[20:], newJpIds)

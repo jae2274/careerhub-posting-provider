@@ -1,6 +1,7 @@
 package jumpit
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jae2274/goutils/apiactor"
@@ -12,9 +13,9 @@ type jumpitApiClient struct {
 	aActor *apiactor.ApiActor
 }
 
-func newJumpitApiClient[QUIT any](callDelay int64, quitChan <-chan QUIT) *jumpitApiClient {
+func newJumpitApiClient(ctx context.Context, callDelay int64) *jumpitApiClient {
 	return &jumpitApiClient{
-		aActor: apiactor.NewApiActor(callDelay, quitChan),
+		aActor: apiactor.NewApiActor(ctx, callDelay),
 	}
 }
 

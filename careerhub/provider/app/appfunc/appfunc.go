@@ -10,6 +10,7 @@ import (
 )
 
 type SeparatedIds struct {
+	TotalCount      int
 	NewPostingIds   []*source.JobPostingId
 	ClosePostingIds []*jobposting.JobPostingId
 }
@@ -39,6 +40,7 @@ func SeparateIds(savedJpIds []*jobposting.JobPostingId, hiringJpIds []*source.Jo
 	}
 
 	return &SeparatedIds{
+		TotalCount:      len(hiringJpIds),
 		NewPostingIds:   newJpIds,
 		ClosePostingIds: closeJpIds,
 	}

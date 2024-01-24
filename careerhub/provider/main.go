@@ -11,7 +11,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
-	"log"
 	"os"
 	"time"
 
@@ -23,41 +22,36 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-	quit := make(chan app.QuitSignal)
-	findNewApp, sendInfoApp := initApp(ctx, quit)
+	mainCtx, quitFunc := context.WithCancel(context.Background())
+	findNewApp, sendInfoApp := initApp(mainCtx)
 
-	llog.Msg("Start finding new job postings").Log(ctx)
-	newJobPostingIds, err := findNewApp.Run()
-	checkErr(ctx, err)
-	llog.Msg("End finding new job postings").Data("jobPostingCount", len(newJobPostingIds)).Log(ctx)
+	llog.Msg("Start finding new job postings").Log(mainCtx)
+	newJobPostingIds, err := findNewApp.Run(mainCtx)
+	checkErr(mainCtx, err)
+	llog.Msg("End finding new job postings").Data("jobPostingCount", len(newJobPostingIds)).Log(mainCtx)
 
-	llog.Msg("Start getting and sending job posting infos").Log(ctx)
-	processedChan, errChan := sendInfoApp.Run(newJobPostingIds, quit)
-	loggedProcessedChan, loggedErrChan := justLog(ctx, processedChan, errChan, quit)
+	llog.Msg("Start sending job postings").Log(mainCtx)
+	processedChan, errChan := sendInfoApp.Run(mainCtx, newJobPostingIds)
 
-	timeoutQuit := make(chan app.QuitSignal)
-	errorQuit := make(chan app.QuitSignal)
-	go cchan.Timeout(10*time.Minute, 10*time.Minute, loggedProcessedChan, timeoutQuit)
-	go cchan.TooMuchError(10, 10*time.Minute, loggedErrChan, errorQuit)
+	loggedProcessedChan, loggedErrChan := justLog(mainCtx, processedChan, errChan)
 
-	select {
-	case <-errorQuit:
-		close(quit)
-		log.Fatal("Too much error")
-	case <-timeoutQuit:
-		close(quit)
-		log.Fatal("Timeout")
-	case <-quit:
-		close(errorQuit)
-		close(timeoutQuit)
-		return
-	}
+	cchan.Timeout(10*time.Minute, 10*time.Minute, loggedProcessedChan, func() { //차이점은 로그 메시지 뿐
+		llog.Msg("Timeout caused").Log(mainCtx)
+		quitFunc()
+	}, quitFunc)
+
+	cchan.TooMuchError(10, 10*time.Minute, loggedErrChan, func() { //차이점은 로그 메시지 뿐
+		llog.Msg("Too much errors caused").Log(mainCtx)
+		quitFunc()
+	}, quitFunc)
+
+	<-mainCtx.Done()
+	llog.Msg("Finish This application").Log(mainCtx)
 }
 
-func initApp[QUIT any](ctx context.Context, quitChan <-chan QUIT) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+func initApp(ctx context.Context) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
 	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx)
-	src := jumpit.NewJumpitSource(6000, quitChan)
+	src := jumpit.NewJumpitSource(ctx, 6000)
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,
@@ -101,12 +95,12 @@ func checkErr(ctx context.Context, err error) {
 	}
 }
 
-func justLog(ctx context.Context, processedChan <-chan app.ProcessedSignal, errChan <-chan error, quitChan <-chan app.QuitSignal) (<-chan app.ProcessedSignal, <-chan error) {
-	loggedProcessedChan := pipe.PassThrough(processedChan, quitChan, func(signal app.ProcessedSignal) {
+func justLog(ctx context.Context, processedChan <-chan app.ProcessedSignal, errChan <-chan error) (<-chan app.ProcessedSignal, <-chan error) {
+	loggedProcessedChan := pipe.PassThrough(ctx, processedChan, func(signal app.ProcessedSignal) {
 		llog.Msg("Processed").Data("site", signal.Site).Data("postingId", signal.PostingId).Log(ctx)
 	})
 
-	loggedErrChan := pipe.PassThrough(errChan, quitChan, func(err error) {
+	loggedErrChan := pipe.PassThrough(ctx, errChan, func(err error) {
 		llog.LogErr(ctx, err)
 	})
 

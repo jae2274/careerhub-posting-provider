@@ -18,15 +18,15 @@ import (
 
 func TestSendJobPostingApp(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
-		quitChan := make(chan app.QuitSignal)
-		src := jumpit.NewJumpitSource(3000, quitChan)
+		ctx := context.Background()
+		src := jumpit.NewJumpitSource(ctx, 3000)
 
 		jobRepo, companyRepo, grpcClient, sendJobApp := initComponents(t, src)
 
 		jpIds, err := src.List(1, 3)
 		require.NoError(t, err)
 
-		processedChan, errChan := sendJobApp.Run(jpIds, quitChan)
+		processedChan, errChan := sendJobApp.Run(ctx, jpIds)
 
 		require.NoError(t, err)
 
