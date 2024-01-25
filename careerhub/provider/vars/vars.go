@@ -8,6 +8,7 @@ import (
 type Vars struct {
 	DbEndpoint   *string
 	GrpcEndpoint string
+	PostLogUrl   string
 }
 
 type ErrNotExistedVar struct {
@@ -31,9 +32,15 @@ func Variables() (*Vars, error) {
 		return nil, err
 	}
 
+	postLogUrl, err := getFromEnv("POST_LOG_URL")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Vars{
 		DbEndpoint:   dbEndpoint,
 		GrpcEndpoint: grpcEndpoint,
+		PostLogUrl:   postLogUrl,
 	}, nil
 }
 

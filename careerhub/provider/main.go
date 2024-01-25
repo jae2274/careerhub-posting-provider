@@ -7,6 +7,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/dynamo"
+	"careerhub-dataprovider/careerhub/provider/logger"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
@@ -30,9 +31,11 @@ const (
 
 func main() {
 	mainCtx, quitFunc := context.WithCancel(context.Background())
-	initLogger(mainCtx)
+	envVars := initEnvVars()
 
-	findNewApp, sendInfoApp := initApp(mainCtx)
+	initLogger(mainCtx, envVars.PostLogUrl)
+
+	findNewApp, sendInfoApp := initApp(mainCtx, envVars)
 
 	llog.Msg("Start finding new job postings").Log(mainCtx)
 	newJobPostingIds, err := findNewApp.Run(mainCtx)
@@ -58,7 +61,13 @@ func main() {
 	llog.Msg("Finish This application").Log(mainCtx)
 }
 
-func initLogger(ctx context.Context) {
+func initEnvVars() *vars.Vars {
+	envVars, err := vars.Variables()
+	checkErr(context.Background(), err)
+	return envVars
+}
+
+func initLogger(ctx context.Context, postLogUrl string) {
 	llog.SetMetadata("service", service)
 	llog.SetMetadata("app", appName)
 	llog.SetDefaultContextData(ctxKeyTraceID)
@@ -67,10 +76,15 @@ func initLogger(ctx context.Context) {
 	checkErr(ctx, err)
 
 	llog.SetMetadata("hostname", hostname)
+
+	appLogger, err := logger.NewAppLogger(ctx, postLogUrl)
+	checkErr(ctx, err)
+
+	llog.SetDefaultLLoger(appLogger)
 }
 
-func initApp(ctx context.Context) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx)
+func initApp(ctx context.Context, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx, envVars)
 	src := jumpit.NewJumpitSource(ctx, 6000)
 	return app.NewFindNewJobPostingApp(
 			src,
@@ -84,9 +98,7 @@ func initApp(ctx context.Context) (*app.FindNewJobPostingApp, *app.SendJobPostin
 		)
 }
 
-func initComponents(ctx context.Context) (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
-	envVars, err := vars.Variables()
-	checkErr(ctx, err)
+func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
 
 	awsConfig, err := awscfg.Config()
 	checkErr(ctx, err)
