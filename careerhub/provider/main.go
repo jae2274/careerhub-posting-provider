@@ -21,14 +21,23 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const (
+	appName = "data-processor"
+	service = "careerhub"
+
+	ctxKeyTraceID = "trace_id"
+)
+
 func main() {
 	mainCtx, quitFunc := context.WithCancel(context.Background())
+	initLogger(mainCtx)
+
 	findNewApp, sendInfoApp := initApp(mainCtx)
 
 	llog.Msg("Start finding new job postings").Log(mainCtx)
 	newJobPostingIds, err := findNewApp.Run(mainCtx)
 	checkErr(mainCtx, err)
-	llog.Msg("End finding new job postings").Data("jobPostingCount", len(newJobPostingIds)).Log(mainCtx)
+	llog.Msg("End finding new job postings").Log(mainCtx)
 
 	llog.Msg("Start sending job postings").Log(mainCtx)
 	processedChan, errChan := sendInfoApp.Run(mainCtx, newJobPostingIds)
@@ -47,6 +56,17 @@ func main() {
 
 	<-mainCtx.Done()
 	llog.Msg("Finish This application").Log(mainCtx)
+}
+
+func initLogger(ctx context.Context) {
+	llog.SetMetadata("service", service)
+	llog.SetMetadata("app", appName)
+	llog.SetDefaultContextData(ctxKeyTraceID)
+
+	hostname, err := os.Hostname()
+	checkErr(ctx, err)
+
+	llog.SetMetadata("hostname", hostname)
 }
 
 func initApp(ctx context.Context) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
