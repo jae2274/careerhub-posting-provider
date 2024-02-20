@@ -5,8 +5,15 @@ import (
 	"os"
 )
 
+type DBUser struct {
+	Username string
+	Password string
+}
+
 type Vars struct {
-	DbEndpoint   *string
+	MongoUri     string
+	DbName       string
+	DBUser       *DBUser
 	GrpcEndpoint string
 	PostLogUrl   string
 }
@@ -25,7 +32,25 @@ func (e *ErrNotExistedVar) Error() string {
 
 func Variables() (*Vars, error) {
 
-	dbEndpoint := getFromEnvPtr("DB_ENDPOINT")
+	mongoUri, err := getFromEnv("MONGO_URI")
+	if err != nil {
+		return nil, err
+	}
+	dbUsername := getFromEnvPtr("DB_USERNAME")
+	dbPassword := getFromEnvPtr("DB_PASSWORD")
+
+	dbName, err := getFromEnv("DB_NAME")
+	if err != nil {
+		return nil, err
+	}
+
+	var dbUser *DBUser
+	if dbUsername != nil && dbPassword != nil {
+		dbUser = &DBUser{
+			Username: *dbUsername,
+			Password: *dbPassword,
+		}
+	}
 
 	grpcEndpoint, err := getFromEnv("GRPC_ENDPOINT")
 	if err != nil {
@@ -38,7 +63,9 @@ func Variables() (*Vars, error) {
 	}
 
 	return &Vars{
-		DbEndpoint:   dbEndpoint,
+		MongoUri:     mongoUri,
+		DbName:       dbName,
+		DBUser:       dbUser,
 		GrpcEndpoint: grpcEndpoint,
 		PostLogUrl:   postLogUrl,
 	}, nil

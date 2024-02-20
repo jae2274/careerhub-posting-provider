@@ -1,28 +1,33 @@
 package company
 
 import (
-	"careerhub-dataprovider/careerhub/provider/dynamo"
+	"fmt"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jae2274/goutils/ptr"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	IdField          = "_id"
+	DefaultNameField = "defaultName"
+	CompanyIdField   = "companyId"
+	SiteField        = "site"
 )
 
 type CompanyId struct {
-	Site      string
-	CompanyId string
+	Site      string `bson:"site"`
+	CompanyId string `bson:"companyId"`
 }
 
 type Company struct {
-	Site      string            `dynamodbav:"site"`
-	CompanyId string            `dynamodbav:"companyId"`
-	CreatedAt dynamo.DynamoTime `dynamodbav:"createdAt"`
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Site      string             `bson:"site"`
+	CompanyId string             `bson:"companyId"`
+	CreatedAt time.Time          `bson:"createdAt"`
 }
-
-const (
-	TableName      = "Company"
-	SiteField      = "site"
-	CompanyIdField = "companyId"
-)
 
 func NewCompany(site, companyId string) *Company {
 	return &Company{
@@ -31,32 +36,19 @@ func NewCompany(site, companyId string) *Company {
 	}
 }
 
-func (c Company) TableDef() dynamo.TableDefinition {
-	siteFieldPtr := ptr.P(SiteField)
-	companyIdFieldPtr := ptr.P(CompanyIdField)
-	tableNamePtr := ptr.P(TableName)
+func (*Company) Collection() string {
+	return "company"
+}
 
-	return dynamo.TableDefinition{
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: companyIdFieldPtr,
-				AttributeType: types.ScalarAttributeTypeS,
+func (*Company) IndexModels() map[string]*mongo.IndexModel {
+	keyName := fmt.Sprintf("%s_1_%s_1", SiteField, CompanyIdField)
+	return map[string]*mongo.IndexModel{
+		keyName: {
+			Keys: bson.D{
+				{Key: SiteField, Value: 1},
+				{Key: CompanyIdField, Value: 1},
 			},
-			{
-				AttributeName: siteFieldPtr,
-				AttributeType: types.ScalarAttributeTypeS,
-			},
+			Options: options.Index().SetUnique(true),
 		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: companyIdFieldPtr,
-				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: siteFieldPtr,
-				KeyType:       types.KeyTypeRange,
-			},
-		},
-		TableName: tableNamePtr,
 	}
 }

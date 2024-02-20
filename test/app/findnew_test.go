@@ -3,7 +3,6 @@ package app
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 
 	// "careerhub-dataprovider/careerhub/provider/queue"
@@ -50,7 +49,7 @@ func TestFindNew(t *testing.T) {
 	require.Len(t, msgs[0].JobPostingIds, len(closedJpIds))
 	IsEqualClosedJobPostingIds(t, closedJpIds, msgs)
 
-	allSavedJp, err := dynamo.GetAll(jobRepo, context.TODO())
+	allSavedJp, err := jobRepo.GetAllHiring(src.Site())
 	require.NoError(t, err)
 
 	IsEqualSavedJobPostings(t, savedJpIds, allSavedJp) //savedJpIds와 closedJpIds 둘 다 DB에 저장되었으나 findNewJobPostingApp.Run() 실행 후 closedJpIds는 DB에서 삭제되었음
@@ -84,7 +83,7 @@ Outer:
 	}
 }
 
-func IsEqualSavedJobPostings(t *testing.T, srcJpIds []*source.JobPostingId, savedJps []*jobposting.JobPosting) {
+func IsEqualSavedJobPostings(t *testing.T, srcJpIds []*source.JobPostingId, savedJps []*jobposting.JobPostingId) {
 	require.Len(t, savedJps, len(srcJpIds))
 
 Outer:

@@ -3,11 +3,10 @@ package main
 //aws pipeline trigger
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
-	"careerhub-dataprovider/careerhub/provider/awscfg"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/logger"
+	"careerhub-dataprovider/careerhub/provider/mongocfg"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/vars"
@@ -99,18 +98,20 @@ func initApp(ctx context.Context, envVars *vars.Vars) (*app.FindNewJobPostingApp
 }
 
 func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
-
-	awsConfig, err := awscfg.Config()
+	db, err := mongocfg.NewDatabase(envVars.MongoUri, envVars.DbName, envVars.DBUser)
 	checkErr(ctx, err)
 
-	dbClient, err := dynamo.NewDbClient(awsConfig, envVars.DbEndpoint)
+	jobPostingModel := &jobposting.JobPosting{}
+	jobPostingCollection := db.Collection(jobPostingModel.Collection())
+	err = mongocfg.CheckIndexViaCollection(jobPostingCollection, jobPostingModel.IndexModels())
 	checkErr(ctx, err)
+	jobPostingRepo := jobposting.NewJobPostingRepo(jobPostingCollection)
 
-	jobPostingRepo, err := jobposting.NewJobPostingRepo(dbClient)
+	companyModel := &company.Company{}
+	companyCollection := db.Collection(companyModel.Collection())
+	err = mongocfg.CheckIndexViaCollection(companyCollection, companyModel.IndexModels())
 	checkErr(ctx, err)
-
-	companyRepo, err := company.NewCompanyRepo(dbClient)
-	checkErr(ctx, err)
+	companyRepo := company.NewCompanyRepo(companyCollection)
 
 	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	checkErr(ctx, err)

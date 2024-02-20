@@ -4,7 +4,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
@@ -51,7 +50,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		IsEqualSrcJobPostingIds(t, jpIds, jobPostingMessages)
 		IsEqualSavedJobPostingIds(t, jpIds, savedIds)
 
-		savedCompanies, err := dynamo.GetAll(companyRepo, context.TODO())
+		savedCompanies, err := companyRepo.GetAll()
 		require.NoError(t, err)
 
 		companyMessages := grpcClient.GetCompany()

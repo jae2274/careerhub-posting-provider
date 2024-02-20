@@ -1,16 +1,11 @@
 package jobposting
 
 import (
-	"careerhub-dataprovider/careerhub/provider/dynamo"
 	"context"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/jae2274/goutils/enum"
-	"github.com/jae2274/goutils/terr"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type StateValues struct{}
@@ -30,94 +25,89 @@ func (StateValues) Values() []string {
 }
 
 type JobPostingRepo struct {
-	dbClient  *dynamodb.Client
-	tableName *string
+	col *mongo.Collection
 }
 
-func NewJobPostingRepo(dbClient *dynamodb.Client) (*JobPostingRepo, error) {
-	jobPostingModel := JobPosting{}
-	err := dynamo.CheckValidTable(dbClient, &jobPostingModel)
+func NewJobPostingRepo(col *mongo.Collection) *JobPostingRepo {
+	return &JobPostingRepo{
+		col: col,
+	}
+}
+
+func (jpr *JobPostingRepo) Get(id *JobPostingId) (*JobPosting, error) {
+	var result JobPosting
+
+	err := jpr.col.FindOne(context.Background(), bson.M{SiteField: id.Site, PostingIdField: id.PostingId}).Decode(&result)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (jpr *JobPostingRepo) Gets(ids []*JobPostingId) ([]*JobPosting, error) {
+	var filters []bson.M
+	for _, id := range ids {
+		filter := bson.M{SiteField: id.Site, PostingIdField: id.PostingId}
+		filters = append(filters, filter)
+	}
+
+	filter := bson.M{"$or": filters}
+
+	cursor, err := jpr.col.Find(context.Background(), filter)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &JobPostingRepo{
-		dbClient:  dbClient,
-		tableName: jobPostingModel.TableDef().TableName,
-	}, nil
-}
-
-func (jpr *JobPostingRepo) Get(id *JobPostingId) (*JobPosting, error) {
-	return dynamo.Get(jpr, context.TODO(), newKey(id.Site, id.PostingId))
-}
-
-func (jpr *JobPostingRepo) Gets(ids []*JobPostingId) ([]*JobPosting, error) {
-	keys := make([]map[string]types.AttributeValue, len(ids))
-	for i, id := range ids {
-		keys[i] = newKey(id.Site, id.PostingId)
+	var result []*JobPosting
+	if err = cursor.All(context.Background(), &result); err != nil {
+		return nil, err
 	}
 
-	return dynamo.Gets(jpr, context.TODO(), keys)
+	return result, nil
 }
 
 func (jpr *JobPostingRepo) Save(value *JobPosting) (*JobPosting, error) {
-	value.CreatedAt = dynamo.DynamoTime(time.Now())
-	return dynamo.Save(jpr, context.TODO(), value)
+	_, err := jpr.col.InsertOne(context.Background(), value)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
 }
 
 func (jpr *JobPostingRepo) GetAllHiring(site string) ([]*JobPostingId, error) {
-	filtEx := expression.Name(SiteField).Equal(expression.Value(site))
-	projEx := expression.NamesList(
-		expression.Name(SiteField), expression.Name(PostingIdField))
-
-	expr, err := expression.NewBuilder().WithFilter(filtEx).WithProjection(projEx).Build()
+	filter := bson.M{SiteField: site}
+	cursor, err := jpr.col.Find(context.Background(), filter)
 
 	if err != nil {
-		return nil, terr.Wrap(err)
+		return nil, err
 	}
 
-	response, err := jpr.dbClient.Scan(context.TODO(), &dynamodb.ScanInput{
-		TableName:                 jpr.tableName,
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
-	})
-
-	if err != nil {
-		return nil, terr.Wrap(err)
+	var result []*JobPostingId
+	if err = cursor.All(context.Background(), &result); err != nil {
+		return nil, err
 	}
 
-	var jobPostingIds []*JobPostingId
-	err = attributevalue.UnmarshalListOfMaps(response.Items, &jobPostingIds)
-	if err != nil {
-		return nil, terr.Wrap(err)
-	}
-
-	return jobPostingIds, nil
+	return result, nil
 }
 
 func (jpr *JobPostingRepo) DeleteAll(ids []*JobPostingId) error {
-	if len(ids) == 0 {
-		return nil
+	var filters []bson.M
+	for _, id := range ids {
+		filter := bson.M{SiteField: id.Site, PostingIdField: id.PostingId}
+		filters = append(filters, filter)
 	}
 
-	keys := make([]map[string]types.AttributeValue, len(ids))
-	for i, id := range ids {
-		keys[i] = newKey(id.Site, id.PostingId)
-	}
+	filter := bson.M{"$or": filters}
 
-	return dynamo.Deletes(jpr, context.TODO(), keys)
-}
+	_, err := jpr.col.DeleteMany(context.Background(), filter)
 
-func (jpr *JobPostingRepo) DbClient() *dynamodb.Client {
-	return jpr.dbClient
-}
-
-func newKey(site string, postingId string) map[string]types.AttributeValue {
-	return map[string]types.AttributeValue{
-		SiteField:      &types.AttributeValueMemberS{Value: site},
-		PostingIdField: &types.AttributeValueMemberS{Value: postingId},
-	}
+	return err
 }

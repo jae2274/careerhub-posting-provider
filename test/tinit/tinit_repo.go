@@ -9,12 +9,8 @@ import (
 func InitJobPostingRepo(t *testing.T) *jobposting.JobPostingRepo {
 	dbClient := DB(t)
 
-	repo, err := jobposting.NewJobPostingRepo(dbClient)
-
-	if err != nil {
-		t.Errorf("Error creating summoner repo: %v", err)
-		t.FailNow()
-	}
+	jobpostingCollection := dbClient.Collection((&jobposting.JobPosting{}).Collection())
+	repo := jobposting.NewJobPostingRepo(jobpostingCollection)
 
 	return repo
 }
@@ -22,12 +18,8 @@ func InitJobPostingRepo(t *testing.T) *jobposting.JobPostingRepo {
 func InitCompanyRepo(t *testing.T) *company.CompanyRepo {
 	dbClient := DB(t)
 
-	repo, err := company.NewCompanyRepo(dbClient)
-
-	if err != nil {
-		t.Errorf("Error creating summoner repo: %v", err)
-		t.FailNow()
-	}
+	companyCollection := dbClient.Collection((&company.Company{}).Collection())
+	repo := company.NewCompanyRepo(companyCollection)
 
 	return repo
 }

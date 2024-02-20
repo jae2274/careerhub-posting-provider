@@ -1,20 +1,24 @@
 package jobposting
 
 import (
-	"careerhub-dataprovider/careerhub/provider/dynamo"
+	"fmt"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jae2274/goutils/ptr"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type JobPostingId struct {
-	Site      string
-	PostingId string
+	Site      string `bson:"site"`
+	PostingId string `bson:"postingId"`
 }
 type JobPosting struct {
-	Site      string            `dynamodbav:"site"`
-	PostingId string            `dynamodbav:"postingId"`
-	CreatedAt dynamo.DynamoTime `dynamodbav:"createdAt"`
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Site      string             `bson:"site"`
+	PostingId string             `bson:"postingId"`
+	CreatedAt time.Time          `bson:"createdAt"`
 }
 
 func NewJobPosting(site string, postingId string) *JobPosting {
@@ -25,55 +29,24 @@ func NewJobPosting(site string, postingId string) *JobPosting {
 }
 
 const (
-	TableName      = "JobPosting"
+	IdField        = "_id"
 	SiteField      = "site"
 	PostingIdField = "postingId"
-	StateField     = "state"
 )
 
-func (jp JobPosting) TableDef() dynamo.TableDefinition {
-	siteFieldPtr := ptr.P(SiteField)
-	postingIdFieldPtr := ptr.P(PostingIdField)
-	tableNamePtr := ptr.P(TableName)
-
-	return dynamo.TableDefinition{
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: postingIdFieldPtr,
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: siteFieldPtr,
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: postingIdFieldPtr,
-				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: siteFieldPtr,
-				KeyType:       types.KeyTypeRange,
-			},
-		},
-		TableName: tableNamePtr,
-	}
+func (*JobPosting) Collection() string {
+	return "JobPosting"
 }
 
-// func (jp JobPosting) GlobalSecondaryIndexes() []types.GlobalSecondaryIndex {
-// 	secIndex := types.GlobalSecondaryIndex{
-// 		IndexName: ptr.P("StateIndex"), // Set the name of the index
-// 		KeySchema: []types.KeySchemaElement{
-// 			{
-// 				AttributeName: ptr.P(StateField), // Set the attribute name for the index
-// 				KeyType:       types.KeyTypeRange,
-// 			},
-// 		},
-// 		Projection: &types.Projection{
-// 			ProjectionType: types.ProjectionTypeAll, // Set the projection type for the index
-// 		},
-// 	}
-
-// 	return []types.GlobalSecondaryIndex{secIndex}
-// }
+func (*JobPosting) IndexModels() map[string]*mongo.IndexModel {
+	keyName := fmt.Sprintf("%s_1_%s_1", SiteField, PostingIdField)
+	return map[string]*mongo.IndexModel{
+		keyName: {
+			Keys: bson.D{
+				{Key: SiteField, Value: 1},
+				{Key: PostingIdField, Value: 1},
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestCompanyRepo(t *testing.T) {
@@ -28,6 +29,7 @@ func TestCompanyRepo(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, findedJp)
+		findedJp.ID = primitive.NilObjectID
 		findedJp.CreatedAt = savedJp.CreatedAt //ignore createdAt
 		require.Equal(t, savedJp, findedJp)
 	})
