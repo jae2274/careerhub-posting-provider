@@ -44,9 +44,9 @@ func main() {
 	llog.Msg("Start sending job postings").Log(mainCtx)
 	processedChan, errChan := sendInfoApp.Run(mainCtx, newJobPostingIds)
 
-	loggedProcessedChan, loggedErrChan := justLog(mainCtx, processedChan, errChan)
+	loggedErrChan := justLog(mainCtx, errChan)
 
-	cchan.Timeout(10*time.Minute, 10*time.Minute, loggedProcessedChan, func() { //차이점은 로그 메시지 뿐
+	cchan.Timeout(10*time.Minute, 10*time.Minute, processedChan, func() { //차이점은 로그 메시지 뿐
 		llog.Msg("Timeout caused").Log(mainCtx)
 		quitFunc()
 	}, quitFunc)
@@ -128,14 +128,10 @@ func checkErr(ctx context.Context, err error) {
 	}
 }
 
-func justLog(ctx context.Context, processedChan <-chan app.ProcessedSignal, errChan <-chan error) (<-chan app.ProcessedSignal, <-chan error) {
-	loggedProcessedChan := pipe.PassThrough(ctx, processedChan, func(signal app.ProcessedSignal) {
-		llog.Msg("Processed").Data("site", signal.Site).Data("postingId", signal.PostingId).Log(ctx)
-	})
-
+func justLog(ctx context.Context, errChan <-chan error) <-chan error {
 	loggedErrChan := pipe.PassThrough(ctx, errChan, func(err error) {
 		llog.LogErr(ctx, err)
 	})
 
-	return loggedProcessedChan, loggedErrChan
+	return loggedErrChan
 }
