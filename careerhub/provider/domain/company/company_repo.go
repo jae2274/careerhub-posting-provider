@@ -32,6 +32,10 @@ func (cr *CompanyRepo) Get(companyId *CompanyId) (*Company, error) {
 }
 
 func (cr *CompanyRepo) Gets(companyIds []*CompanyId) ([]*Company, error) {
+	if len(companyIds) == 0 {
+		return make([]*Company, 0), nil
+	}
+
 	// 회사 ID 목록에서 site와 companyId를 추출하여 검색 조건으로 사용
 	var filters []bson.M
 	for _, id := range companyIds {

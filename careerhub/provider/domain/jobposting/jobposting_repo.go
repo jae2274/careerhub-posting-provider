@@ -50,6 +50,10 @@ func (jpr *JobPostingRepo) Get(id *JobPostingId) (*JobPosting, error) {
 }
 
 func (jpr *JobPostingRepo) Gets(ids []*JobPostingId) ([]*JobPosting, error) {
+	if len(ids) == 0 {
+		return make([]*JobPosting, 0), nil
+	}
+
 	var filters []bson.M
 	for _, id := range ids {
 		filter := bson.M{SiteField: id.Site, PostingIdField: id.PostingId}
@@ -99,6 +103,10 @@ func (jpr *JobPostingRepo) GetAllHiring(site string) ([]*JobPostingId, error) {
 }
 
 func (jpr *JobPostingRepo) DeleteAll(ids []*JobPostingId) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
 	var filters []bson.M
 	for _, id := range ids {
 		filter := bson.M{SiteField: id.Site, PostingIdField: id.PostingId}
