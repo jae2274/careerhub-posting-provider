@@ -3,6 +3,7 @@ package jobposting
 import (
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/test/tinit"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,34 @@ func TestJobPostingRepo(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, ids, 1)
 		require.True(t, isContainsId(ids, savedJpId3))
+	})
+
+	t.Run("Delete Chunk 25 size", func(t *testing.T) { //25개 이상의 데이터를 삭제시엔 25개씩 삭제해야함
+		jpRepo := tinit.InitJobPostingRepo(t)
+
+		savedSize := 60
+		savedJps := make([]*jobposting.JobPosting, savedSize)
+		savedJpIds := make([]*jobposting.JobPostingId, savedSize)
+		for i := 0; i < savedSize; i++ {
+			savedJpIds[i] = &jobposting.JobPostingId{Site: "jumpit", PostingId: fmt.Sprintf("savedId%d", i)}
+			savedJps[i] = jobposting.NewJobPosting(savedJpIds[i].Site, savedJpIds[i].PostingId)
+		}
+
+		for i := 0; i < savedSize; i++ {
+			_, err := jpRepo.Save(savedJps[i])
+			require.NoError(t, err)
+		}
+
+		ids, err := jpRepo.GetAllHiring(savedJpIds[0].Site)
+		require.NoError(t, err)
+		require.Len(t, ids, savedSize)
+
+		err = jpRepo.DeleteAll(savedJpIds[0:55]) // 25 + 25 + 5로, 3번에 걸쳐 삭제
+		require.NoError(t, err)
+
+		ids, err = jpRepo.GetAllHiring(savedJpIds[0].Site)
+		require.NoError(t, err)
+		require.Len(t, ids, 5)
 	})
 }
 
