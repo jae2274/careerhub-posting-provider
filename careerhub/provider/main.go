@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	appName = "data-processor"
+	appName = "data-provider"
 	service = "careerhub"
 
 	ctxKeyTraceID = "trace_id"
