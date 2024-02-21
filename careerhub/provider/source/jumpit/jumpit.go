@@ -4,7 +4,9 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 	"fmt"
-	"log"
+	"os"
+
+	"github.com/jae2274/goutils/llog"
 )
 
 type JumpitSource struct {
@@ -45,15 +47,17 @@ func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 }
 
 func (js *JumpitSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
+	jobCategory, ok := jpId.EtcInfo["jobCategory"]
+	if !ok {
+		llog.Error(context.Background(), fmt.Sprintf("jobCategory is not exist. site:%s, id: %v, etcInfo: %v", js.Site(), jpId.PostingId, jpId.EtcInfo))
+		os.Exit(1)
+	}
+
 	postingUrl, response, err := js.client.Detail(jpId.PostingId)
 	if err != nil {
 		return nil, err
 	}
 
-	jobCategory, ok := jpId.EtcInfo["jobCategory"]
-	if !ok {
-		log.Fatalf("jobCategory is not exist. site:%s, id: %v, etcInfo: %v", js.Site(), jpId.PostingId, jpId.EtcInfo)
-	}
 	return convertSourceDetail(response, js.Site(), postingUrl, jobCategory)
 }
 
