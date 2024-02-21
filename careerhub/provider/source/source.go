@@ -27,7 +27,7 @@ type JobPostingDetail struct {
 	CompanyName    string      `validate:"nonzero"`
 	JobCategory    []string    `validate:"nonzero"`
 	MainContent    MainContent `validate:"nonzero"`
-	RequiredSkill  []string    `validate:"nonzero"`
+	RequiredSkill  []string
 	Tags           []string
 	RequiredCareer Career `validate:"nonzero"`
 	PublishedAt    *int64
@@ -56,9 +56,9 @@ type Company struct {
 	CompanyId     string `validate:"nonzero"`
 	Name          string `validate:"nonzero"`
 	CompanyUrl    *string
-	CompanyImages []string `validate:"nonzero"`
-	Description   string   `validate:"nonzero"`
-	CompanyLogo   string   `validate:"nonzero"`
+	CompanyImages []string
+	Description   string `validate:"nonzero"`
+	CompanyLogo   string `validate:"nonzero"`
 }
 
 // src에서 모든 채용공고id를 가져온다.

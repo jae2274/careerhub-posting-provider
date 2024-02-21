@@ -16,17 +16,25 @@ type WantedSource struct {
 	categoryIdToName map[int]string //TODO: implement
 }
 
-func NewJumpitSource(ctx context.Context, callDelayMilis int64) *WantedSource {
-	return &WantedSource{
-		client: *newWantedApiClient(ctx, callDelayMilis),
+func NewWantedSource(ctx context.Context, callDelayMilis int64) (*WantedSource, error) {
+	client := *newWantedApiClient(ctx, callDelayMilis)
+	jobCategory, err := GetJobCategoryMap()
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &WantedSource{
+		client:           client,
+		categoryIdToName: jobCategory,
+	}, nil
 }
 
 func (js *WantedSource) Site() string {
-	return "jumpit"
+	return "wanted"
 }
 func (js *WantedSource) MaxPageSize() int {
-	return 0 //TODO: implement
+	return 100 //TODO: implement
 }
 
 func (js *WantedSource) List(page, size int) ([]*source.JobPostingId, error) { //가장 최신의 채용공고부터 정렬되도록 반환
@@ -73,5 +81,11 @@ func (js *WantedSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDet
 	return convertSourceDetail(response, js.Site(), postingUrl, jobCategory)
 }
 func (js *WantedSource) Company(companyId string) (*source.Company, error) {
-	return nil, nil //TODO: implement
+
+	response, err := js.client.Company(companyId)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertSourceCompany(response, js.Site()), nil
 }

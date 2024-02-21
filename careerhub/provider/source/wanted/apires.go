@@ -3,6 +3,7 @@ package wanted
 import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -105,19 +106,9 @@ type SkillTag struct {
 }
 
 type Company struct {
-	ID                       int                      `json:"id"`
-	IndustryName             string                   `json:"industry_name"`
-	ApplicationResponseStats ApplicationResponseStats `json:"application_response_stats"`
-	Name                     string                   `json:"name"`
-}
-
-type ApplicationResponseStats struct {
-	AvgRate       int    `json:"avg_rate"`
-	Level         string `json:"level"`
-	DelayedCount  int    `json:"delayed_count"`
-	AvgDay        int    `json:"avg_day"`
-	RemainedCount int    `json:"remained_count"`
-	Type          string `json:"type"`
+	ID           int    `json:"id"`
+	IndustryName string `json:"industry_name"`
+	Name         string `json:"name"`
 }
 
 type CompanyTag struct {
@@ -138,11 +129,6 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 	if job.DueTime != nil {
 		closedDate, _ := time.Parse("2006-01-02", *job.DueTime)
 		closedAt = closedDate.Unix()
-	}
-
-	var skillNames []string
-	for _, skill := range job.SkillTags {
-		skillNames = append(skillNames, skill.Title)
 	}
 
 	var companyTags []string
@@ -171,7 +157,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 			Benefits:       job.Detail.Benefits,
 			RecruitProcess: nil,
 		},
-		RequiredSkill:  skillNames,
+		RequiredSkill:  []string{}, //wanted의 skill에 대한 정보에 신뢰성이 없어 사용하지 않음
 		Tags:           companyTags,
 		RequiredCareer: requiredCareer,
 		PublishedAt:    nil,
@@ -209,4 +195,76 @@ func extractCareer(job Job, careerType CareerType) (*int32, error) {
 	}
 
 	return min, nil
+}
+
+type CategoryJson struct {
+	Props `json:"props"`
+}
+
+type Props struct {
+	PageProps `json:"pageProps"`
+}
+
+type PageProps struct {
+	Tags `json:"tags"`
+}
+
+type Tags struct {
+	Categories []Category `json:"category"`
+}
+
+type Category struct {
+	Id    int           `json:"id"`
+	Tags  []SubCategory `json:"tags"`
+	Title string        `json:"title"`
+}
+
+type SubCategory struct {
+	Id    int    `json:"id"`
+	Title string `json:"title"`
+}
+
+type wantedCompany struct {
+	Company company `json:"company"`
+}
+
+type company struct {
+	Id            int              `json:"id"`
+	Name          string           `json:"name"`
+	Detail        companyDetail    `json:"detail"`
+	CompanyImages []companyImage   `json:"company_images"`
+	LogoImg       companyLogoImage `json:"logo_img"`
+}
+
+type companyDetail struct {
+	Description string  `json:"description"`
+	Link        *string `json:"link"`
+}
+
+type companyImage struct {
+	Url string `json:"url"`
+}
+
+type companyLogoImage struct {
+	Origin string `json:"origin"`
+}
+
+func convertSourceCompany(company *wantedCompany, site string) *source.Company {
+	result := company.Company
+
+	companyImages := make([]string, len(result.CompanyImages))
+
+	for i, image := range result.CompanyImages {
+		companyImages[i] = image.Url
+	}
+
+	return &source.Company{
+		Site:          site,
+		CompanyId:     strconv.Itoa(result.Id),
+		Name:          result.Name,
+		CompanyUrl:    result.Detail.Link,
+		CompanyImages: companyImages,
+		Description:   result.Detail.Description,
+		CompanyLogo:   result.LogoImg.Origin,
+	}
 }
