@@ -28,8 +28,8 @@ type JobPostingDetail struct {
 	JobCategory    []string    `validate:"nonzero"`
 	MainContent    MainContent `validate:"nonzero"`
 	RequiredSkill  []string    `validate:"nonzero"`
-	Tags           []string    `validate:"nonzero"`
-	RequiredCareer Career      `validate:"nonzero"`
+	Tags           []string
+	RequiredCareer Career `validate:"nonzero"`
 	PublishedAt    *int64
 	ClosedAt       *int64
 	Address        []string `validate:"nonzero"`
