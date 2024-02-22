@@ -11,6 +11,10 @@ import (
 	"github.com/jae2274/goutils/terr"
 )
 
+const (
+	Site = "wanted"
+)
+
 type WantedSource struct {
 	client           wantedApiClient
 	categoryIdToName map[int]string //TODO: implement
@@ -31,7 +35,7 @@ func NewWantedSource(ctx context.Context, callDelayMilis int64) (*WantedSource, 
 }
 
 func (js *WantedSource) Site() string {
-	return "wanted"
+	return Site
 }
 func (js *WantedSource) MaxPageSize() int {
 	return 100 //TODO: implement

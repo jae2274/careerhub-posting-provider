@@ -9,6 +9,10 @@ import (
 	"github.com/jae2274/goutils/llog"
 )
 
+const (
+	Site = "jumpit"
+)
+
 type JumpitSource struct {
 	client jumpitApiClient
 }
@@ -20,7 +24,7 @@ func NewJumpitSource(ctx context.Context, callDelayMilis int64) *JumpitSource {
 }
 
 func (s *JumpitSource) Site() string {
-	return "jumpit"
+	return Site
 }
 
 func (s *JumpitSource) MaxPageSize() int {

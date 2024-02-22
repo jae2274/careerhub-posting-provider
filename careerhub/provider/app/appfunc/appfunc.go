@@ -7,6 +7,8 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 	"time"
+
+	"github.com/jae2274/goutils/terr"
 )
 
 type SeparatedIds struct {
@@ -108,7 +110,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 
 	_, err := grpcClient.RegisterJobPostingInfo(context.TODO(), message)
 	if err != nil {
-		return err
+		return terr.Wrap(err)
 	}
 
 	_, err = jpRepo.Save(jobposting.NewJobPosting(message.JobPostingId.Site, message.JobPostingId.PostingId))

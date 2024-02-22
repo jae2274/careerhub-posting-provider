@@ -128,7 +128,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 	var closedAt int64
 	if job.DueTime != nil {
 		closedDate, _ := time.Parse("2006-01-02", *job.DueTime)
-		closedAt = closedDate.Unix()
+		closedAt = closedDate.UnixMilli()
 	}
 
 	var companyTags []string

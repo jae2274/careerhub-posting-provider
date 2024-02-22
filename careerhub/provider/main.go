@@ -8,15 +8,20 @@ import (
 	"careerhub-dataprovider/careerhub/provider/logger"
 	"careerhub-dataprovider/careerhub/provider/mongocfg"
 	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
+	"careerhub-dataprovider/careerhub/provider/source/wanted"
 	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
+	"flag"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/jae2274/goutils/cchan"
 	"github.com/jae2274/goutils/cchan/pipe"
 	"github.com/jae2274/goutils/llog"
+	"github.com/jae2274/goutils/terr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -28,13 +33,21 @@ const (
 	ctxKeyTraceID = "trace_id"
 )
 
+func siteFlag() string {
+	siteFlag := flag.String("site", "", "site to crawl")
+	flag.Parse()
+
+	return *siteFlag
+}
+
 func main() {
 	mainCtx, quitFunc := context.WithCancel(context.Background())
 	envVars := initEnvVars()
 
-	initLogger(mainCtx, envVars.PostLogUrl)
+	site := siteFlag()
+	initLogger(mainCtx, site, envVars.PostLogUrl)
 
-	findNewApp, sendInfoApp := initApp(mainCtx, envVars)
+	findNewApp, sendInfoApp := initApp(mainCtx, site, envVars)
 
 	llog.Msg("Start finding new job postings").Log(mainCtx)
 	newJobPostingIds, err := findNewApp.Run(mainCtx)
@@ -66,9 +79,10 @@ func initEnvVars() *vars.Vars {
 	return envVars
 }
 
-func initLogger(ctx context.Context, postLogUrl string) {
+func initLogger(ctx context.Context, site, postLogUrl string) {
 	llog.SetMetadata("service", service)
 	llog.SetMetadata("app", appName)
+	llog.SetMetadata("site", site)
 	llog.SetDefaultContextData(ctxKeyTraceID)
 
 	hostname, err := os.Hostname()
@@ -82,9 +96,25 @@ func initLogger(ctx context.Context, postLogUrl string) {
 	llog.SetDefaultLLoger(appLogger)
 }
 
-func initApp(ctx context.Context, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
+func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource, error) {
+	delayMilis := int64(6000)
+
+	switch site {
+	case jumpit.Site:
+		return jumpit.NewJumpitSource(ctx, delayMilis), nil
+	case wanted.Site:
+		return wanted.NewWantedSource(ctx, delayMilis)
+
+	default:
+		return nil, terr.New(fmt.Sprintf("site flag is not valid. site: %s", site))
+	}
+}
+
+func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
 	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx, envVars)
-	src := jumpit.NewJumpitSource(ctx, 6000)
+	src, err := jobPostingSource(ctx, site)
+	checkErr(ctx, err)
+
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,

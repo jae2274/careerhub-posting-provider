@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jae2274/goutils/enum"
+	"github.com/jae2274/goutils/terr"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -80,7 +81,7 @@ func (jpr *JobPostingRepo) Save(value *JobPosting) (*JobPosting, error) {
 	_, err := jpr.col.InsertOne(context.Background(), value)
 
 	if err != nil {
-		return nil, err
+		return nil, terr.Wrap(err)
 	}
 
 	return value, nil
