@@ -103,7 +103,7 @@ func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource
 	case jumpit.Site:
 		return jumpit.NewJumpitSource(ctx, delayMilis), nil
 	case wanted.Site:
-		return wanted.NewWantedSource(ctx, delayMilis)
+		return wanted.NewWantedSource(ctx, delayMilis), nil
 
 	default:
 		return nil, terr.New(fmt.Sprintf("site flag is not valid. site: %s", site))

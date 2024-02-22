@@ -34,7 +34,7 @@ func (ja *wantedApiClient) List(offset, limit int) (*wantedPostingList, error) {
 }
 
 func (ja *wantedApiClient) Detail(postingId string) (string, *wantedPostingDetail, error) {
-	postingUrl := fmt.Sprintf("https://www.wanted.co.kr/api/v4/jobs/%s", postingId)
+	postingUrl := fmt.Sprintf("https://www.wanted.co.kr/api/chaos/jobs/v1/%s/details", postingId)
 	request := apiactor.NewRequest(
 		"GET",
 		postingUrl,
@@ -89,30 +89,4 @@ func getJobCategoryJson() (*CategoryJson, error) {
 	c.Visit("https://www.wanted.co.kr/wdlist")
 	wg.Wait()
 	return &categoryJson, err
-}
-
-func GetJobCategoryMap() (map[int]string, error) {
-	categoryJson, err := getJobCategoryJson()
-	if err != nil {
-		return nil, terr.Wrap(err)
-	}
-
-	var developmentCategory *Category
-	for _, category := range categoryJson.Props.PageProps.Tags.Categories {
-		if category.Id == developmentTagId {
-			developmentCategory = &category
-			break
-		}
-	}
-	if developmentCategory == nil {
-		return nil, terr.New("development category not found")
-	}
-
-	categoryMap := make(map[int]string)
-
-	for _, subCategory := range developmentCategory.Tags {
-		categoryMap[subCategory.Id] = subCategory.Title
-	}
-
-	return categoryMap, nil
 }

@@ -24,8 +24,7 @@ func TestSource(t *testing.T) {
 
 	t.Run("wanted", func(t *testing.T) {
 		ctx := context.Background()
-		src, err := wanted.NewWantedSource(ctx, callDelayMilis)
-		require.NoError(t, err)
+		src := wanted.NewWantedSource(ctx, callDelayMilis)
 
 		testSource(t, src)
 	})
@@ -61,11 +60,6 @@ func testSource(t *testing.T, src source.JobPostingSource) {
 
 		require.NoError(t, err)
 		require.NotEmpty(t, jobPostingIds)
-
-		for _, jpId := range jobPostingIds {
-			_, ok := jpId.EtcInfo["jobCategory"]
-			require.True(t, ok)
-		}
 
 		page1, err := src.List(1, 10)
 		require.NoError(t, err)

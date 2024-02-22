@@ -4,11 +4,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 	"fmt"
-	"os"
-	"strings"
-
-	"github.com/jae2274/goutils/llog"
-	"github.com/jae2274/goutils/terr"
 )
 
 const (
@@ -16,22 +11,15 @@ const (
 )
 
 type WantedSource struct {
-	client           wantedApiClient
-	categoryIdToName map[int]string //TODO: implement
+	client wantedApiClient
 }
 
-func NewWantedSource(ctx context.Context, callDelayMilis int64) (*WantedSource, error) {
+func NewWantedSource(ctx context.Context, callDelayMilis int64) *WantedSource {
 	client := *newWantedApiClient(ctx, callDelayMilis)
-	jobCategory, err := GetJobCategoryMap()
-
-	if err != nil {
-		return nil, err
-	}
 
 	return &WantedSource{
-		client:           client,
-		categoryIdToName: jobCategory,
-	}, nil
+		client: client,
+	}
 }
 
 func (js *WantedSource) Site() string {
@@ -51,19 +39,9 @@ func (js *WantedSource) List(page, size int) ([]*source.JobPostingId, error) { /
 
 	for i, position := range result.Data {
 
-		var jobCategories []string
-		for _, categoryTag := range position.CategoryTags {
-			jobCategory, ok := js.categoryIdToName[categoryTag.ID]
-			if !ok {
-				return nil, terr.New(fmt.Sprintf("categoryIdToName is not exist. categoryId:%d", categoryTag.ID))
-			}
-			jobCategories = append(jobCategories, jobCategory)
-		}
-
 		postingIds[i] = &source.JobPostingId{
 			Site:      js.Site(),
 			PostingId: fmt.Sprintf("%d", position.Id),
-			EtcInfo:   map[string]string{"jobCategory": strings.Join(jobCategories, ",")},
 		}
 	}
 
@@ -71,18 +49,12 @@ func (js *WantedSource) List(page, size int) ([]*source.JobPostingId, error) { /
 }
 
 func (js *WantedSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
-	jobCategory, ok := jpId.EtcInfo["jobCategory"]
-	if !ok {
-		llog.Error(context.Background(), fmt.Sprintf("jobCategory is not exist. site:%s, id: %v, etcInfo: %v", js.Site(), jpId.PostingId, jpId.EtcInfo))
-		os.Exit(1)
-	}
-
 	postingUrl, response, err := js.client.Detail(jpId.PostingId)
 	if err != nil {
 		return nil, err
 	}
 
-	return convertSourceDetail(response, js.Site(), postingUrl, jobCategory)
+	return convertSourceDetail(response, js.Site(), postingUrl)
 }
 func (js *WantedSource) Company(companyId string) (*source.Company, error) {
 

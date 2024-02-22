@@ -4,7 +4,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -13,13 +12,7 @@ type wantedPostingList struct {
 }
 
 type jobItem struct {
-	Id           int           `json:"id"`
-	CategoryTags []CategoryTag `json:"category_tags"`
-}
-
-type CategoryTag struct {
-	ParentID int `json:"parent_id"`
-	ID       int `json:"id"`
+	Id int `json:"id"`
 }
 
 type wantedPostingDetail struct {
@@ -27,29 +20,27 @@ type wantedPostingDetail struct {
 }
 
 type Job struct {
-	Address         Address        `json:"address"`
-	IsCrossboarder  bool           `json:"is_crossboarder"`
-	ID              int            `json:"id"`
-	Detail          JobDetail      `json:"detail"`
-	DueTime         *string        `json:"due_time,omitempty"`
-	Score           float64        `json:"score"`
-	CompanyImages   []CompanyImage `json:"company_images"`
-	Hidden          bool           `json:"hidden"`
-	SkillTags       []SkillTag     `json:"skill_tags"`
-	Status          string         `json:"status"`
-	IsBookmark      bool           `json:"is_bookmark"`
-	Company         Company        `json:"company"`
-	IsCompanyFollow bool           `json:"is_company_follow"`
-	CompareCountry  bool           `json:"compare_country"`
-	LogoImg         Image          `json:"logo_img"`
-	CompanyTags     []CompanyTag   `json:"company_tags"`
-	ShortLink       interface{}    `json:"short_link,omitempty"`
-	TitleImg        Image          `json:"title_img"`
-	Position        string         `json:"position"`
-	CategoryTags    []CategoryTag  `json:"category_tags"`
+	ID          int         `json:"id"`
+	Address     Address     `json:"address"`
+	AnnualFrom  *int32      `json:"annual_from"`
+	AnnualTo    *int32      `json:"annual_to"`
+	CategoryTag CategoryTag `json:"category_tag"`
+	Company     Company     `json:"company"`
+	Detail      JobDetail   `json:"detail"`
+	DueTime     *string     `json:"due_time"`
+}
+
+type CategoryTag struct {
+	ChildTags []ChildTag `json:"child_tags"`
+}
+
+type ChildTag struct {
+	Id   int    `json:"id"`
+	Text string `json:"text"`
 }
 
 type JobDetail struct {
+	Position        string `json:"position"`
 	Requirements    string `json:"requirements"`
 	MainTasks       string `json:"main_tasks"`
 	Intro           string `json:"intro"`
@@ -106,9 +97,10 @@ type SkillTag struct {
 }
 
 type Company struct {
-	ID           int    `json:"id"`
-	IndustryName string `json:"industry_name"`
-	Name         string `json:"name"`
+	ID            int      `json:"id"`
+	IndustryName  string   `json:"industry_name"`
+	Name          string   `json:"name"`
+	HighlightTags []string `json:"highlight_tags"`
 }
 
 type CompanyTag struct {
@@ -122,23 +114,24 @@ type Image struct {
 	Thumb  string `json:"thumb"`
 }
 
-func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl string, jobCategory string) (*source.JobPostingDetail, error) {
+const (
+	maxTimeMillis = 253402300799000 //9999-12-31 23:59:59.000
+)
+
+func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl string) (*source.JobPostingDetail, error) {
 	job := detail.Job
 
 	var closedAt int64
 	if job.DueTime != nil {
 		closedDate, _ := time.Parse("2006-01-02", *job.DueTime)
 		closedAt = closedDate.UnixMilli()
+	} else {
+		closedAt = maxTimeMillis
 	}
 
-	var companyTags []string
-	for _, tag := range job.CompanyTags {
-		companyTags = append(companyTags, tag.Title)
-	}
-
-	requiredCareer, err := extractCareers(job)
-	if err != nil {
-		return nil, err
+	var jobCategories []string
+	for _, tag := range job.CategoryTag.ChildTags {
+		jobCategories = append(jobCategories, tag.Text)
 	}
 
 	return &source.JobPostingDetail{
@@ -146,10 +139,10 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		PostingId:   fmt.Sprintf("%d", job.ID),
 		CompanyId:   fmt.Sprintf("%d", job.Company.ID),
 		CompanyName: job.Company.Name,
-		JobCategory: strings.Split(jobCategory, ","),
+		JobCategory: jobCategories,
 		MainContent: source.MainContent{
 			PostUrl:        postingUrl,
-			Title:          job.Position,
+			Title:          job.Detail.Position,
 			Intro:          job.Detail.Intro,
 			MainTask:       job.Detail.MainTasks,
 			Qualifications: job.Detail.Requirements,
@@ -157,44 +150,16 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 			Benefits:       job.Detail.Benefits,
 			RecruitProcess: nil,
 		},
-		RequiredSkill:  []string{}, //wanted의 skill에 대한 정보에 신뢰성이 없어 사용하지 않음
-		Tags:           companyTags,
-		RequiredCareer: requiredCareer,
-		PublishedAt:    nil,
-		ClosedAt:       &closedAt,
-		Address:        []string{job.Address.FullLocation},
+		RequiredSkill: []string{}, //wanted의 skill에 대한 정보에 신뢰성이 없어 사용하지 않음
+		Tags:          job.Company.HighlightTags,
+		RequiredCareer: source.Career{
+			Min: job.AnnualFrom,
+			Max: job.AnnualTo,
+		},
+		PublishedAt: nil,
+		ClosedAt:    &closedAt,
+		Address:     []string{job.Address.FullLocation},
 	}, nil
-}
-
-func extractCareers(job Job) (source.Career, error) {
-	min, err := extractCareer(job, MIN)
-	if err != nil {
-		return source.Career{}, err
-	}
-
-	max, err := extractCareer(job, MAX)
-	if err != nil {
-		return source.Career{}, err
-	}
-
-	return source.Career{
-		Min: min,
-		Max: max,
-	}, nil
-}
-
-func extractCareer(job Job, careerType CareerType) (*int32, error) {
-	min, err := Career(job.Position, careerType)
-	if err != nil {
-		return nil, err
-	} else if min == nil {
-		min, err = Career(job.Detail.Requirements, careerType)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return min, nil
 }
 
 type CategoryJson struct {
