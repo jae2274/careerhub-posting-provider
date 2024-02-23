@@ -69,6 +69,7 @@ func AllJobPostingIds(src JobPostingSource) ([]*JobPostingId, error) {
 	jobPostingIds := make([]*JobPostingId, 0)
 
 	page := 0
+	alreadyListed := make(map[string]bool)
 	for {
 		page++
 		ids, err := src.List(page, maxPageSize)
@@ -80,7 +81,12 @@ func AllJobPostingIds(src JobPostingSource) ([]*JobPostingId, error) {
 			break
 		}
 
-		jobPostingIds = append(jobPostingIds, ids...)
+		for _, id := range ids {
+			if _, ok := alreadyListed[id.PostingId]; !ok {
+				alreadyListed[id.PostingId] = true
+				jobPostingIds = append(jobPostingIds, id)
+			}
+		}
 	}
 	slices.Reverse(jobPostingIds)
 	return jobPostingIds, nil
