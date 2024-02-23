@@ -2,6 +2,7 @@ package jobposting
 
 import (
 	"context"
+	"time"
 
 	"github.com/jae2274/goutils/enum"
 	"github.com/jae2274/goutils/terr"
@@ -78,6 +79,7 @@ func (jpr *JobPostingRepo) Gets(ids []*JobPostingId) ([]*JobPosting, error) {
 }
 
 func (jpr *JobPostingRepo) Save(value *JobPosting) (*JobPosting, error) {
+	value.CreatedAt = time.Now()
 	_, err := jpr.col.InsertOne(context.Background(), value)
 
 	if err != nil {

@@ -2,6 +2,7 @@ package company
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -76,6 +77,7 @@ func (cr *CompanyRepo) GetAll() ([]*Company, error) {
 }
 
 func (cr *CompanyRepo) Save(company *Company) (*Company, error) {
+	company.CreatedAt = time.Now()
 	_, err := cr.col.InsertOne(context.TODO(), company)
 	return company, err
 }
