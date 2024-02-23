@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"sync"
 
 	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/terr"
@@ -10,6 +11,7 @@ import (
 type AppLogger struct {
 	apiLogger    *apiLogger
 	stdoutLogger *llog.StdoutLLogger
+	Wg           sync.WaitGroup
 }
 
 func NewAppLogger(ctx context.Context, postUrl string) (*AppLogger, error) {
@@ -35,7 +37,9 @@ func NewAppLogger(ctx context.Context, postUrl string) (*AppLogger, error) {
 }
 
 func (al *AppLogger) Log(lg *llog.LLog) error {
+	al.Wg.Add(1)
 	go func() { //apiLogger.Log()는 비동기로 실행, apiLogger.Log()가 실패해도 stdoutLogger.Log()는 실행
+		defer al.Wg.Done()
 		err := al.apiLogger.Log(lg)
 		if err != nil {
 			al.stdoutLogger.Log(

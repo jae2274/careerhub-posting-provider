@@ -45,7 +45,7 @@ func main() {
 	envVars := initEnvVars()
 
 	site := siteFlag()
-	initLogger(mainCtx, site, envVars.PostLogUrl)
+	appLogger := initLogger(mainCtx, site, envVars.PostLogUrl)
 
 	findNewApp, sendInfoApp := initApp(mainCtx, site, envVars)
 
@@ -71,6 +71,7 @@ func main() {
 
 	<-mainCtx.Done()
 	llog.Msg("Finish This application").Log(mainCtx)
+	appLogger.Wg.Wait()
 }
 
 func initEnvVars() *vars.Vars {
@@ -79,7 +80,7 @@ func initEnvVars() *vars.Vars {
 	return envVars
 }
 
-func initLogger(ctx context.Context, site, postLogUrl string) {
+func initLogger(ctx context.Context, site, postLogUrl string) *logger.AppLogger {
 	llog.SetMetadata("service", service)
 	llog.SetMetadata("app", appName)
 	llog.SetMetadata("site", site)
@@ -94,6 +95,7 @@ func initLogger(ctx context.Context, site, postLogUrl string) {
 	checkErr(ctx, err)
 
 	llog.SetDefaultLLoger(appLogger)
+	return appLogger
 }
 
 func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource, error) {
