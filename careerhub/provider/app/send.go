@@ -4,7 +4,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 
@@ -15,10 +15,10 @@ type SendJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
 	companyRepo    *company.CompanyRepo
-	grpcClient     processor_grpc.DataProcessorClient
+	grpcClient     provider_grpc.ProviderGrpcClient
 }
 
-func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcClient processor_grpc.DataProcessorClient) *SendJobPostingApp {
+func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcClient provider_grpc.ProviderGrpcClient) *SendJobPostingApp {
 	return &SendJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,

@@ -3,7 +3,7 @@ package app
 import (
 	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 
@@ -13,10 +13,10 @@ import (
 type FindNewJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
-	grpcClient     processor_grpc.DataProcessorClient
+	grpcClient     provider_grpc.ProviderGrpcClient
 }
 
-func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, closedJpQueue processor_grpc.DataProcessorClient) *FindNewJobPostingApp {
+func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, closedJpQueue provider_grpc.ProviderGrpcClient) *FindNewJobPostingApp {
 	return &FindNewJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,

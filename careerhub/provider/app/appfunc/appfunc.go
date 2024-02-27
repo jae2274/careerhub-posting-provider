@@ -3,7 +3,7 @@ package appfunc
 import (
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 	"time"
@@ -52,18 +52,18 @@ func CallDetail(src source.JobPostingSource, jpId *source.JobPostingId) (*source
 	return src.Detail(jpId)
 }
 
-func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient processor_grpc.DataProcessorClient, closedJpIds []*jobposting.JobPostingId) error {
+func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient provider_grpc.ProviderGrpcClient, closedJpIds []*jobposting.JobPostingId) error {
 
-	closedJpIdMessages := make([]*processor_grpc.JobPostingId, len(closedJpIds))
+	closedJpIdMessages := make([]*provider_grpc.JobPostingId, len(closedJpIds))
 
 	for i, closedJpId := range closedJpIds {
-		closedJpIdMessages[i] = &processor_grpc.JobPostingId{
+		closedJpIdMessages[i] = &provider_grpc.JobPostingId{
 			Site:      closedJpId.Site,
 			PostingId: closedJpId.PostingId,
 		}
 	}
 
-	message := &processor_grpc.JobPostings{
+	message := &provider_grpc.JobPostings{
 		JobPostingIds: closedJpIdMessages,
 	}
 
@@ -77,16 +77,16 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient process
 	return jpRepo.DeleteAll(closedJpIds)
 }
 
-func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_grpc.DataProcessorClient, detail *source.JobPostingDetail) error {
-	message := &processor_grpc.JobPostingInfo{
-		JobPostingId: &processor_grpc.JobPostingId{
+func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient provider_grpc.ProviderGrpcClient, detail *source.JobPostingDetail) error {
+	message := &provider_grpc.JobPostingInfo{
+		JobPostingId: &provider_grpc.JobPostingId{
 			Site:      detail.Site,
 			PostingId: detail.PostingId,
 		},
 		CompanyId:   detail.CompanyId,
 		CompanyName: detail.CompanyName,
 		JobCategory: detail.JobCategory,
-		MainContent: &processor_grpc.MainContent{
+		MainContent: &provider_grpc.MainContent{
 			PostUrl:        detail.MainContent.PostUrl,
 			Title:          detail.MainContent.Title,
 			Intro:          detail.MainContent.Intro,
@@ -98,7 +98,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 		},
 		RequiredSkill: detail.RequiredSkill,
 		Tags:          detail.Tags,
-		RequiredCareer: &processor_grpc.Career{
+		RequiredCareer: &provider_grpc.Career{
 			Min: detail.RequiredCareer.Min,
 			Max: detail.RequiredCareer.Max,
 		},
@@ -120,7 +120,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient processor_
 func ProcessCompany(
 	src source.JobPostingSource,
 	companyRepo *company.CompanyRepo, //TODO: need to implement
-	grpcClient processor_grpc.DataProcessorClient,
+	grpcClient provider_grpc.ProviderGrpcClient,
 	companyId *company.CompanyId,
 ) error {
 
@@ -138,7 +138,7 @@ func ProcessCompany(
 		return err
 	}
 
-	message := &processor_grpc.Company{
+	message := &provider_grpc.Company{
 		Site:          srcCompany.Site,
 		CompanyId:     srcCompany.CompanyId,
 		Name:          srcCompany.Name,

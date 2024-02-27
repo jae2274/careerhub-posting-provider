@@ -3,7 +3,7 @@ package app
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 
 	// "careerhub-dataprovider/careerhub/provider/queue"
 	"careerhub-dataprovider/careerhub/provider/source"
@@ -63,12 +63,12 @@ func initFindNewComponents(t *testing.T, src source.JobPostingSource) (*jobposti
 	return jobRepo, grpcClient, app.NewFindNewJobPostingApp(src, jobRepo, grpcClient)
 }
 
-func getClosedMessages(t *testing.T, grpcClient tinit.MockGrpcClient) []*processor_grpc.JobPostings {
+func getClosedMessages(t *testing.T, grpcClient tinit.MockGrpcClient) []*provider_grpc.JobPostings {
 
 	return grpcClient.GetClosedJpIds()
 }
 
-func IsEqualClosedJobPostingIds(t *testing.T, closedJpIds []jobposting.JobPostingId, closedMessages []*processor_grpc.JobPostings) {
+func IsEqualClosedJobPostingIds(t *testing.T, closedJpIds []jobposting.JobPostingId, closedMessages []*provider_grpc.JobPostings) {
 	require.Len(t, closedMessages, 1)
 	require.Len(t, closedMessages[0].JobPostingIds, len(closedJpIds))
 Outer:

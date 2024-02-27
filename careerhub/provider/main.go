@@ -7,7 +7,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/logger"
 	"careerhub-dataprovider/careerhub/provider/mongocfg"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/careerhub/provider/source/wanted"
@@ -129,7 +129,7 @@ func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNew
 		)
 }
 
-func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, *company.CompanyRepo, processor_grpc.DataProcessorClient) {
+func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, *company.CompanyRepo, provider_grpc.ProviderGrpcClient) {
 	db, err := mongocfg.NewDatabase(envVars.MongoUri, envVars.DbName, envVars.DBUser)
 	checkErr(ctx, err)
 
@@ -148,7 +148,7 @@ func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPos
 	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	checkErr(ctx, err)
 
-	grpcClient := processor_grpc.NewDataProcessorClient(conn)
+	grpcClient := provider_grpc.NewProviderGrpcClient(conn)
 
 	return jobPostingRepo, companyRepo, grpcClient
 }

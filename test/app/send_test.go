@@ -4,7 +4,7 @@ import (
 	"careerhub-dataprovider/careerhub/provider/app"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/processor_grpc"
+	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
 	"careerhub-dataprovider/test/tinit"
@@ -67,7 +67,7 @@ func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobP
 	return jobRepo, companyRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, companyRepo, grpcClient)
 }
 
-func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, jobPostingMessages []*processor_grpc.JobPostingInfo) {
+func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {
 	require.Len(t, jobPostingMessages, len(srcJpIds))
 Outer:
 	for _, jobPostingMessage := range jobPostingMessages {
@@ -95,7 +95,7 @@ Outer:
 	}
 }
 
-func IsEqualSavedCompanies(t *testing.T, savedCompanies []*company.Company, companyMessages []*processor_grpc.Company) {
+func IsEqualSavedCompanies(t *testing.T, savedCompanies []*company.Company, companyMessages []*provider_grpc.Company) {
 	require.Len(t, savedCompanies, len(companyMessages))
 Outer:
 	for _, companyMessage := range companyMessages {
@@ -109,7 +109,7 @@ Outer:
 	}
 }
 
-func IsEqualJobPostingsAndCompanies(t *testing.T, jobPostingMessages []*processor_grpc.JobPostingInfo, companyMessages []*processor_grpc.Company) {
+func IsEqualJobPostingsAndCompanies(t *testing.T, jobPostingMessages []*provider_grpc.JobPostingInfo, companyMessages []*provider_grpc.Company) {
 	jpCompany := make(map[string]interface{})
 	for _, jobPosting := range jobPostingMessages {
 		jpCompany[jobPosting.JobPostingId.Site+jobPosting.CompanyId] = false
