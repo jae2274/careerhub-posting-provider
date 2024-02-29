@@ -106,6 +106,7 @@ func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient provider_g
 		ClosedAt:    detail.ClosedAt,
 		Address:     detail.Address,
 		CreatedAt:   time.Now().UnixMilli(),
+		ImageUrl:    detail.ImageUrl,
 	}
 
 	_, err := grpcClient.RegisterJobPostingInfo(context.TODO(), message)

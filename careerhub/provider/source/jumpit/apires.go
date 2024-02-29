@@ -37,37 +37,38 @@ type postingDetail struct {
 }
 
 type detailResult struct {
-	ID                    int            `json:"id"`
-	Title                 string         `json:"title"`
-	CompanyName           string         `json:"companyName"`
-	Logo                  string         `json:"logo"`
-	TechStacks            []techStack    `json:"techStacks"`
-	ServiceInfo           string         `json:"serviceInfo"`
-	Responsibility        string         `json:"responsibility"`
-	Qualifications        string         `json:"qualifications"`
-	PreferredRequirements string         `json:"preferredRequirements"`
-	Welfares              string         `json:"welfares"`
-	RecruitProcess        string         `json:"recruitProcess"`
-	Newcomer              bool           `json:"newcomer"`
-	MinCareer             *int32         `json:"minCareer,omitempty"`
-	MaxCareer             *int32         `json:"maxCareer,omitempty"`
-	PositionStatus        string         `json:"positionStatus"`
-	DeveloperInterviews   []interface{}  `json:"developerInterviews"`
-	ItCompanyStory        []interface{}  `json:"itCompanyStory"`
-	PublishedAt           string         `json:"publishedAt"`
-	ClosedAt              string         `json:"closedAt"`
-	Location              *interface{}   `json:"location,omitempty"`
-	Tags                  []tag          `json:"tags"`
-	CompanyProfileID      int            `json:"companyProfileId"`
-	CompanyURL            *string        `json:"companyUrl,omitempty"`
-	AlwaysOpen            bool           `json:"alwaysOpen"`
-	Celebration           int            `json:"celebration"`
-	Graduate              bool           `json:"graduate"`
-	WorkingPlaces         []WorkingPlace `json:"workingPlaces"`
-	Follow                bool           `json:"follow"`
-	Scrap                 bool           `json:"scrap"`
-	Applied               bool           `json:"applied"`
-	Draft                 bool           `json:"draft"`
+	ID                    int                 `json:"id"`
+	Title                 string              `json:"title"`
+	CompanyName           string              `json:"companyName"`
+	Logo                  string              `json:"logo"`
+	TechStacks            []techStack         `json:"techStacks"`
+	ServiceInfo           string              `json:"serviceInfo"`
+	Responsibility        string              `json:"responsibility"`
+	Qualifications        string              `json:"qualifications"`
+	PreferredRequirements string              `json:"preferredRequirements"`
+	Welfares              string              `json:"welfares"`
+	RecruitProcess        string              `json:"recruitProcess"`
+	Newcomer              bool                `json:"newcomer"`
+	MinCareer             *int32              `json:"minCareer,omitempty"`
+	MaxCareer             *int32              `json:"maxCareer,omitempty"`
+	PositionStatus        string              `json:"positionStatus"`
+	DeveloperInterviews   []interface{}       `json:"developerInterviews"`
+	ItCompanyStory        []interface{}       `json:"itCompanyStory"`
+	PublishedAt           string              `json:"publishedAt"`
+	ClosedAt              string              `json:"closedAt"`
+	Location              *interface{}        `json:"location,omitempty"`
+	Tags                  []tag               `json:"tags"`
+	CompanyProfileID      int                 `json:"companyProfileId"`
+	CompanyURL            *string             `json:"companyUrl,omitempty"`
+	AlwaysOpen            bool                `json:"alwaysOpen"`
+	Celebration           int                 `json:"celebration"`
+	Graduate              bool                `json:"graduate"`
+	WorkingPlaces         []WorkingPlace      `json:"workingPlaces"`
+	Follow                bool                `json:"follow"`
+	Scrap                 bool                `json:"scrap"`
+	Applied               bool                `json:"applied"`
+	Draft                 bool                `json:"draft"`
+	CacheCompanyImages    []cacheCompanyImage `json:"cacheCompanyImages"`
 }
 
 type techStack struct {
@@ -93,6 +94,11 @@ type WorkingPlace struct {
 	IsDomestic bool   `json:"isDomestic"`
 }
 
+type cacheCompanyImage struct {
+	ImagePath  string `json:"imagePath"`
+	SortNumber int    `json:"sortNumber"`
+}
+
 func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategory string) (*source.JobPostingDetail, error) {
 	result := postingDetail.Result
 
@@ -106,12 +112,20 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategor
 		return nil, terr.Wrap(err)
 	}
 
+	var imageUrl *string
+	if len(result.CacheCompanyImages) > 0 {
+		imageUrl = &(result.CacheCompanyImages[0].ImagePath)
+	} else {
+		imageUrl = nil
+	}
+
 	return &source.JobPostingDetail{
 		Site:        site,
 		PostingId:   fmt.Sprintf("%d", result.ID),
 		CompanyId:   fmt.Sprintf("%d", result.CompanyProfileID),
 		CompanyName: result.CompanyName,
 		JobCategory: strings.Split(jobCategory, ","),
+		ImageUrl:    imageUrl,
 		MainContent: source.MainContent{
 			PostUrl:        postUrl,
 			Title:          result.Title,

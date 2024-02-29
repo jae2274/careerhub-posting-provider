@@ -27,6 +27,7 @@ type Job struct {
 	CategoryTag CategoryTag `json:"category_tag"`
 	Company     Company     `json:"company"`
 	Detail      JobDetail   `json:"detail"`
+	TitleImages []string    `json:"title_images"`
 	DueTime     *string     `json:"due_time"`
 }
 
@@ -134,12 +135,21 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		jobCategories = append(jobCategories, tag.Text)
 	}
 
+	var imageUrl *string
+	if len(job.TitleImages) > 0 {
+		imageUrl = &(job.TitleImages[0])
+	} else {
+		imageUrl = nil
+
+	}
+
 	return &source.JobPostingDetail{
 		Site:        site,
 		PostingId:   fmt.Sprintf("%d", job.ID),
 		CompanyId:   fmt.Sprintf("%d", job.Company.ID),
 		CompanyName: job.Company.Name,
 		JobCategory: jobCategories,
+		ImageUrl:    imageUrl,
 		MainContent: source.MainContent{
 			PostUrl:        postingUrl,
 			Title:          job.Detail.Position,
