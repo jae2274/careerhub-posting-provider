@@ -140,16 +140,16 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		imageUrl = &(job.TitleImages[0])
 	} else {
 		imageUrl = nil
-
 	}
 
 	return &source.JobPostingDetail{
-		Site:        site,
-		PostingId:   fmt.Sprintf("%d", job.ID),
-		CompanyId:   fmt.Sprintf("%d", job.Company.ID),
-		CompanyName: job.Company.Name,
-		JobCategory: jobCategories,
-		ImageUrl:    imageUrl,
+		Site:          site,
+		PostingId:     fmt.Sprintf("%d", job.ID),
+		CompanyId:     fmt.Sprintf("%d", job.Company.ID),
+		CompanyName:   job.Company.Name,
+		JobCategory:   jobCategories,
+		ImageUrl:      imageUrl,
+		CompanyImages: job.TitleImages,
 		MainContent: source.MainContent{
 			PostUrl:        postingUrl,
 			Title:          job.Detail.Position,

@@ -119,13 +119,19 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategor
 		imageUrl = nil
 	}
 
+	companyImages := make([]string, len(result.CacheCompanyImages))
+	for i, image := range result.CacheCompanyImages {
+		companyImages[i] = image.ImagePath
+	}
+
 	return &source.JobPostingDetail{
-		Site:        site,
-		PostingId:   fmt.Sprintf("%d", result.ID),
-		CompanyId:   fmt.Sprintf("%d", result.CompanyProfileID),
-		CompanyName: result.CompanyName,
-		JobCategory: strings.Split(jobCategory, ","),
-		ImageUrl:    imageUrl,
+		Site:          site,
+		PostingId:     fmt.Sprintf("%d", result.ID),
+		CompanyId:     fmt.Sprintf("%d", result.CompanyProfileID),
+		CompanyName:   result.CompanyName,
+		JobCategory:   strings.Split(jobCategory, ","),
+		ImageUrl:      imageUrl,
+		CompanyImages: companyImages,
 		MainContent: source.MainContent{
 			PostUrl:        postUrl,
 			Title:          result.Title,

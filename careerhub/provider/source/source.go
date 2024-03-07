@@ -34,6 +34,7 @@ type JobPostingDetail struct {
 	ClosedAt       *int64
 	Address        []string `validate:"nonzero"`
 	ImageUrl       *string
+	CompanyImages  []string
 }
 
 type MainContent struct {
