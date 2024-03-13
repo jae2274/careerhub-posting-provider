@@ -1,6 +1,8 @@
 package source
 
-import "slices"
+import (
+	"slices"
+)
 
 type Page struct {
 	Size int
@@ -83,13 +85,42 @@ func AllJobPostingIds(src JobPostingSource) ([]*JobPostingId, error) {
 			break
 		}
 
-		for _, id := range ids {
-			if _, ok := alreadyListed[id.PostingId]; !ok {
-				alreadyListed[id.PostingId] = true
-				jobPostingIds = append(jobPostingIds, id)
-			}
+		jobPostingIds = appendJobPostingIds(jobPostingIds, ids, alreadyListed)
+
+		//다음 페이지를 호출 전에 채용공고 추가 또는 제거로 인해 누락된 채용공고가 있는지 확인한다.
+		nextOffset := page * maxPageSize
+
+		supplePageSize := GetMaxPrime(maxPageSize)
+		supplePage := nextOffset / supplePageSize
+
+		ids, err = src.List(supplePage, supplePageSize)
+		if err != nil {
+			return nil, err
 		}
+		jobPostingIds = appendJobPostingIds(jobPostingIds, ids, alreadyListed)
 	}
 	slices.Reverse(jobPostingIds)
 	return jobPostingIds, nil
+}
+
+func GetMaxPrime(maxPageSize int) int {
+	primeNumbers := []int{47, 43, 41, 37, 31, 29, 23, 19, 17, 13, 11, 7, 5, 3, 2}
+
+	for _, prime := range primeNumbers {
+		if maxPageSize > prime && maxPageSize%prime != 0 {
+			return prime
+		}
+	}
+	return 2
+}
+
+func appendJobPostingIds(jobPostingIds []*JobPostingId, newIds []*JobPostingId, alreadyListed map[string]bool) []*JobPostingId {
+	for _, id := range newIds {
+		if _, ok := alreadyListed[id.PostingId]; !ok {
+			alreadyListed[id.PostingId] = true
+			jobPostingIds = append(jobPostingIds, id)
+		}
+	}
+
+	return jobPostingIds
 }

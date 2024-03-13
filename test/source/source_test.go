@@ -28,6 +28,18 @@ func TestSource(t *testing.T) {
 
 		testSource(t, src)
 	})
+
+	t.Run("GetMaxPrime", func(t *testing.T) {
+		require.Equal(t, 2, source.GetMaxPrime(3))
+		require.Equal(t, 3, source.GetMaxPrime(4))
+		require.Equal(t, 3, source.GetMaxPrime(5))
+		require.Equal(t, 5, source.GetMaxPrime(6))
+		require.Equal(t, 7, source.GetMaxPrime(10))
+		require.Equal(t, 13, source.GetMaxPrime(16))
+		require.Equal(t, 17, source.GetMaxPrime(18))
+		require.Equal(t, 19, source.GetMaxPrime(21))
+		require.Equal(t, 23, source.GetMaxPrime(24))
+	})
 }
 
 func testSource(t *testing.T, src source.JobPostingSource) {
