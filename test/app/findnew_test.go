@@ -110,7 +110,7 @@ func initFindNewComponents(t *testing.T, src source.JobPostingSource) (*jobposti
 	jobRepo := tinit.InitJobPostingRepo(t)
 	grpcClient := tinit.InitGrpcClient(t)
 
-	return jobRepo, grpcClient, app.NewFindNewJobPostingApp(src, jobRepo, grpcClient)
+	return jobRepo, grpcClient, app.NewFindNewJobPostingApp(src, jobRepo, provider_grpc.NewProviderGrpcService(grpcClient))
 }
 
 func getClosedMessages(t *testing.T, grpcClient tinit.MockGrpcClient) []*provider_grpc.JobPostings {

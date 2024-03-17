@@ -13,14 +13,14 @@ import (
 type FindNewJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
-	grpcClient     provider_grpc.ProviderGrpcClient
+	grpcService    *provider_grpc.ProviderGrpcService
 }
 
-func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, closedJpQueue provider_grpc.ProviderGrpcClient) *FindNewJobPostingApp {
+func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, grpcService *provider_grpc.ProviderGrpcService) *FindNewJobPostingApp {
 	return &FindNewJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,
-		grpcClient:     closedJpQueue,
+		grpcService:    grpcService,
 	}
 }
 
@@ -37,11 +37,12 @@ func (f *FindNewJobPostingApp) Run(ctx context.Context) ([]*jobposting.JobPostin
 		},
 	).Log(ctx)
 
-	err = appfunc.SendClosedJobPostings(f.jobpostingRepo, f.grpcClient, separatedIds.ClosePostingIds)
+	err = f.grpcService.CloseJobPostings(ctx, separatedIds.ClosePostingIds)
 	if err != nil {
 		return nil, err
 	}
 
+	f.jobpostingRepo.DeleteAll(separatedIds.ClosePostingIds)
 	return separatedIds.NewPostingIds, nil
 }
 

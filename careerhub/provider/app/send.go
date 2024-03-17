@@ -1,7 +1,6 @@
 package app
 
 import (
-	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/provider_grpc"
@@ -15,15 +14,15 @@ type SendJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
 	companyRepo    *company.CompanyRepo
-	grpcClient     provider_grpc.ProviderGrpcClient
+	grpcService    *provider_grpc.ProviderGrpcService
 }
 
-func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcClient provider_grpc.ProviderGrpcClient) *SendJobPostingApp {
+func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcService *provider_grpc.ProviderGrpcService) *SendJobPostingApp {
 	return &SendJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,
 		companyRepo:    companyRepo,
-		grpcClient:     grpcClient,
+		grpcService:    grpcService,
 	}
 }
 
@@ -39,18 +38,53 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobp
 
 	step1 := pipe.NewStep(nil,
 		func(jpId *jobposting.JobPostingId) (*jobposting.JobPostingDetail, error) {
-			return appfunc.CallDetail(s.src, jpId)
+			return s.src.Detail(jpId)
 		})
 	step2 := pipe.NewStep(nil,
 		func(detail *jobposting.JobPostingDetail) (*jobposting.JobPostingDetail, error) {
-			return detail, appfunc.ProcessCompany(s.src, s.companyRepo, s.grpcClient, &company.CompanyId{
+
+			companyInfo, err := s.companyRepo.Get(&company.CompanyId{
 				Site:      detail.Site,
 				CompanyId: detail.CompanyId,
 			})
+
+			if err != nil {
+				return detail, err
+			} else if companyInfo != nil {
+				return detail, nil // already processed
+			}
+
+			srcCompany, err := s.src.Company(detail.CompanyId)
+
+			if err != nil {
+				return detail, err
+			}
+
+			err = s.grpcService.RegisterCompany(context.TODO(), srcCompany)
+			if err != nil {
+				return detail, err
+			}
+
+			_, err = s.companyRepo.Save(company.NewCompany(detail.Site, detail.CompanyId))
+			if err != nil {
+				return detail, err
+			}
+
+			return detail, nil
 		})
 	step3 := pipe.NewStep(nil,
 		func(detail *jobposting.JobPostingDetail) (ProcessedSignal, error) {
-			return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.grpcClient, detail)
+			err := s.grpcService.RegisterJobPostingInfo(context.TODO(), detail)
+			if err != nil {
+				return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, err
+			}
+
+			_, err = s.jobpostingRepo.Save(jobposting.NewJobPosting(detail.Site, detail.PostingId))
+			if err != nil {
+				return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, err
+			}
+
+			return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, nil
 		})
 
 	errChan := make(chan error, 100)

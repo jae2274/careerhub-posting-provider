@@ -64,7 +64,7 @@ func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobP
 	companyRepo := tinit.InitCompanyRepo(t)
 	grpcClient := tinit.InitGrpcClient(t)
 
-	return jobRepo, companyRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, companyRepo, grpcClient)
+	return jobRepo, companyRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, companyRepo, provider_grpc.NewProviderGrpcService(grpcClient))
 }
 
 func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {

@@ -120,12 +120,12 @@ func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNew
 	return app.NewFindNewJobPostingApp(
 			src,
 			jobPostingRepo,
-			grpcClient,
+			provider_grpc.NewProviderGrpcService(grpcClient),
 		), app.NewSendJobPostingApp(
 			src,
 			jobPostingRepo,
 			companyRepo,
-			grpcClient,
+			provider_grpc.NewProviderGrpcService(grpcClient),
 		)
 }
 

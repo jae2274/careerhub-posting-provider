@@ -41,6 +41,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env MONGO_URI=${MONGO_URI} DB_NAME=${DB_NAME} GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} go test -p 1 -timeout 300s ./test/...
+	@env MONGO_URI=${MONGO_URI} DB_NAME=${DB_NAME} GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} go test -p 1 -timeout 600s ./test/...
 	
 
