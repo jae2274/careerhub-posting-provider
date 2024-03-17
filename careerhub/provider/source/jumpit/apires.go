@@ -4,7 +4,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jae2274/goutils/ptr"
@@ -69,6 +68,7 @@ type detailResult struct {
 	Applied               bool                `json:"applied"`
 	Draft                 bool                `json:"draft"`
 	CacheCompanyImages    []cacheCompanyImage `json:"cacheCompanyImages"`
+	JobCategories         []jobCategory       `json:"jobCategories"`
 }
 
 type techStack struct {
@@ -99,7 +99,12 @@ type cacheCompanyImage struct {
 	SortNumber int    `json:"sortNumber"`
 }
 
-func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategory string) (*source.JobPostingDetail, error) {
+type jobCategory struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*source.JobPostingDetail, error) {
 	result := postingDetail.Result
 
 	publishedAt, err := time.Parse(time.DateTime, result.PublishedAt)
@@ -123,13 +128,17 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl, jobCategor
 	for i, image := range result.CacheCompanyImages {
 		companyImages[i] = image.ImagePath
 	}
+	jobCategory := make([]string, len(result.JobCategories))
+	for i, category := range result.JobCategories {
+		jobCategory[i] = category.Name
+	}
 
 	return &source.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", result.ID),
 		CompanyId:     fmt.Sprintf("%d", result.CompanyProfileID),
 		CompanyName:   result.CompanyName,
-		JobCategory:   strings.Split(jobCategory, ","),
+		JobCategory:   jobCategory,
 		ImageUrl:      imageUrl,
 		CompanyImages: companyImages,
 		MainContent: source.MainContent{

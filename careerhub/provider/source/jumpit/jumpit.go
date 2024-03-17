@@ -4,9 +4,6 @@ import (
 	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
 	"fmt"
-	"os"
-
-	"github.com/jae2274/goutils/llog"
 )
 
 const (
@@ -43,7 +40,6 @@ func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 		postingIds[i] = &source.JobPostingId{
 			Site:      js.Site(),
 			PostingId: fmt.Sprintf("%d", position.Id),
-			EtcInfo:   map[string]string{"jobCategory": position.JobCategory},
 		}
 	}
 
@@ -51,18 +47,12 @@ func (js *JumpitSource) List(page, size int) ([]*source.JobPostingId, error) {
 }
 
 func (js *JumpitSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
-	jobCategory, ok := jpId.EtcInfo["jobCategory"]
-	if !ok {
-		llog.Error(context.Background(), fmt.Sprintf("jobCategory is not exist. site:%s, id: %v, etcInfo: %v", js.Site(), jpId.PostingId, jpId.EtcInfo))
-		os.Exit(1)
-	}
-
 	postingUrl, response, err := js.client.Detail(jpId.PostingId)
 	if err != nil {
 		return nil, err
 	}
 
-	return convertSourceDetail(response, js.Site(), postingUrl, jobCategory)
+	return convertSourceDetail(response, js.Site(), postingUrl)
 }
 
 func (js *JumpitSource) Company(companyId string) (*source.Company, error) {
