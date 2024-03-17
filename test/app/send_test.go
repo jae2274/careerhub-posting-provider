@@ -67,7 +67,7 @@ func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobP
 	return jobRepo, companyRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, companyRepo, grpcClient)
 }
 
-func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {
+func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {
 	require.Len(t, jobPostingMessages, len(srcJpIds))
 Outer:
 	for _, jobPostingMessage := range jobPostingMessages {
@@ -81,7 +81,7 @@ Outer:
 	}
 }
 
-func IsEqualSavedJobPostingIds(t *testing.T, srcJpIds []*source.JobPostingId, savedJpIds []*jobposting.JobPostingId) {
+func IsEqualSavedJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, savedJpIds []*jobposting.JobPostingId) {
 	require.Len(t, savedJpIds, len(srcJpIds))
 Outer:
 	for _, message := range savedJpIds {

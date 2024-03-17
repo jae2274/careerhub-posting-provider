@@ -2,6 +2,7 @@ package app
 
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
+	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
@@ -19,13 +20,13 @@ import (
 
 type MockSource struct {
 	originSrc source.JobPostingSource
-	pageCache map[string][]*source.JobPostingId
+	pageCache map[string][]*jobposting.JobPostingId
 }
 
 func NewMockSource(originSrc source.JobPostingSource) *MockSource {
 	return &MockSource{
 		originSrc: originSrc,
-		pageCache: make(map[string][]*source.JobPostingId),
+		pageCache: make(map[string][]*jobposting.JobPostingId),
 	}
 }
 
@@ -33,7 +34,7 @@ func pageKey(page, size int) string { return fmt.Sprintf("%d_%d", page, size) }
 
 func (s *MockSource) Site() string     { return s.originSrc.Site() }
 func (s *MockSource) MaxPageSize() int { return s.originSrc.MaxPageSize() }
-func (s *MockSource) List(page, size int) ([]*source.JobPostingId, error) { //호출할 때마다 같은 결과가 보장되지 않아 테스트 시엔 cache를 사용하여 같은 결과를 보장
+func (s *MockSource) List(page, size int) ([]*jobposting.JobPostingId, error) { //호출할 때마다 같은 결과가 보장되지 않아 테스트 시엔 cache를 사용하여 같은 결과를 보장
 	if list, ok := s.pageCache[pageKey(page, size)]; ok {
 		return list, nil
 	}
@@ -42,10 +43,10 @@ func (s *MockSource) List(page, size int) ([]*source.JobPostingId, error) { //�
 	s.pageCache[pageKey(page, size)] = list
 	return list, err
 }
-func (s *MockSource) Detail(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
+func (s *MockSource) Detail(jpId *jobposting.JobPostingId) (*jobposting.JobPostingDetail, error) {
 	return s.originSrc.Detail(jpId)
 }
-func (s *MockSource) Company(companyId string) (*source.Company, error) {
+func (s *MockSource) Company(companyId string) (*company.CompanyDetail, error) {
 	return s.originSrc.Company(companyId)
 }
 
@@ -132,7 +133,7 @@ Outer:
 	}
 }
 
-func IsEqualSavedJobPostings(t *testing.T, srcJpIds []*source.JobPostingId, savedJps []*jobposting.JobPostingId) {
+func IsEqualSavedJobPostings(t *testing.T, srcJpIds []*jobposting.JobPostingId, savedJps []*jobposting.JobPostingId) {
 	require.Len(t, savedJps, len(srcJpIds))
 
 Outer:

@@ -24,7 +24,7 @@ func NewFindNewJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobpos
 	}
 }
 
-func (f *FindNewJobPostingApp) Run(ctx context.Context) ([]*source.JobPostingId, error) {
+func (f *FindNewJobPostingApp) Run(ctx context.Context) ([]*jobposting.JobPostingId, error) {
 	separatedIds, err := f.separateIds()
 	if err != nil {
 		return nil, err

@@ -1,7 +1,8 @@
 package wanted
 
 import (
-	"careerhub-dataprovider/careerhub/provider/source"
+	"careerhub-dataprovider/careerhub/provider/domain/company"
+	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"fmt"
 	"strconv"
 	"time"
@@ -119,7 +120,7 @@ const (
 	maxTimeMillis = 253402300799000 //9999-12-31 23:59:59.000
 )
 
-func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl string) (*source.JobPostingDetail, error) {
+func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl string) (*jobposting.JobPostingDetail, error) {
 	job := detail.Job
 
 	var closedAt int64
@@ -142,7 +143,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		imageUrl = nil
 	}
 
-	return &source.JobPostingDetail{
+	return &jobposting.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", job.ID),
 		CompanyId:     fmt.Sprintf("%d", job.Company.ID),
@@ -150,7 +151,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		JobCategory:   jobCategories,
 		ImageUrl:      imageUrl,
 		CompanyImages: job.TitleImages,
-		MainContent: source.MainContent{
+		MainContent: jobposting.MainContent{
 			PostUrl:        postingUrl,
 			Title:          job.Detail.Position,
 			Intro:          job.Detail.Intro,
@@ -162,7 +163,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		},
 		RequiredSkill: []string{}, //wanted의 skill에 대한 정보에 신뢰성이 없어 사용하지 않음
 		Tags:          job.Company.HighlightTags,
-		RequiredCareer: source.Career{
+		RequiredCareer: jobposting.Career{
 			Min: job.AnnualFrom,
 			Max: job.AnnualTo,
 		},
@@ -200,10 +201,10 @@ type SubCategory struct {
 }
 
 type wantedCompany struct {
-	Company company `json:"company"`
+	Company companyRes `json:"company"`
 }
 
-type company struct {
+type companyRes struct {
 	Id            int              `json:"id"`
 	Name          string           `json:"name"`
 	Detail        companyDetail    `json:"detail"`
@@ -224,8 +225,8 @@ type companyLogoImage struct {
 	Origin string `json:"origin"`
 }
 
-func convertSourceCompany(company *wantedCompany, site string) *source.Company {
-	result := company.Company
+func convertSourceCompany(companyRes *wantedCompany, site string) *company.CompanyDetail {
+	result := companyRes.Company
 
 	companyImages := make([]string, len(result.CompanyImages))
 
@@ -233,7 +234,7 @@ func convertSourceCompany(company *wantedCompany, site string) *source.Company {
 		companyImages[i] = image.Url
 	}
 
-	return &source.Company{
+	return &company.CompanyDetail{
 		Site:          site,
 		CompanyId:     strconv.Itoa(result.Id),
 		Name:          result.Name,

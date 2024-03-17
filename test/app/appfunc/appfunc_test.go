@@ -3,7 +3,6 @@ package appfunc
 import (
 	"careerhub-dataprovider/careerhub/provider/app/appfunc"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/source"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -59,15 +58,15 @@ func TestSeparateIds(t *testing.T) {
 	})
 }
 
-func convertJpIdsToSourceJpIds(jpIds []*jobposting.JobPostingId) []*source.JobPostingId {
-	srcJpIds := make([]*source.JobPostingId, 0)
+func convertJpIdsToSourceJpIds(jpIds []*jobposting.JobPostingId) []*jobposting.JobPostingId {
+	srcJpIds := make([]*jobposting.JobPostingId, 0)
 	for _, jpId := range jpIds {
-		srcJpIds = append(srcJpIds, &source.JobPostingId{Site: jpId.Site, PostingId: jpId.PostingId})
+		srcJpIds = append(srcJpIds, &jobposting.JobPostingId{Site: jpId.Site, PostingId: jpId.PostingId})
 	}
 	return srcJpIds
 }
 
-func isContainsId(ids []*source.JobPostingId, idToFind *jobposting.JobPostingId) bool {
+func isContainsId(ids []*jobposting.JobPostingId, idToFind *jobposting.JobPostingId) bool {
 	for _, item := range ids {
 		if item.Site == idToFind.Site && item.PostingId == idToFind.PostingId {
 			return true

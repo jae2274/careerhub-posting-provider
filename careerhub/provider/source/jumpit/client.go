@@ -43,13 +43,13 @@ func (ja *jumpitApiClient) Detail(postingId string) (string, *postingDetail, err
 	return postingUrl, result, nil
 }
 
-func (ja *jumpitApiClient) Company(companyId string) (*company, error) {
+func (ja *jumpitApiClient) Company(companyId string) (*companyRes, error) {
 	companyUrl := fmt.Sprintf("https://api.jumpit.co.kr/api/company/%s", companyId)
 	request := apiactor.NewRequest(
 		"GET",
 		companyUrl,
 	)
-	response, err := callApi[company](ja.aActor, request)
+	response, err := callApi[companyRes](ja.aActor, request)
 
 	if err != nil {
 		return nil, terr.Wrap(err)

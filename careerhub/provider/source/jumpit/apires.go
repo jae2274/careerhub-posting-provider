@@ -1,7 +1,8 @@
 package jumpit
 
 import (
-	"careerhub-dataprovider/careerhub/provider/source"
+	"careerhub-dataprovider/careerhub/provider/domain/company"
+	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"fmt"
 	"strconv"
 	"time"
@@ -104,7 +105,7 @@ type jobCategory struct {
 	Name string `json:"name"`
 }
 
-func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*source.JobPostingDetail, error) {
+func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*jobposting.JobPostingDetail, error) {
 	result := postingDetail.Result
 
 	publishedAt, err := time.Parse(time.DateTime, result.PublishedAt)
@@ -133,7 +134,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*s
 		jobCategory[i] = category.Name
 	}
 
-	return &source.JobPostingDetail{
+	return &jobposting.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", result.ID),
 		CompanyId:     fmt.Sprintf("%d", result.CompanyProfileID),
@@ -141,7 +142,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*s
 		JobCategory:   jobCategory,
 		ImageUrl:      imageUrl,
 		CompanyImages: companyImages,
-		MainContent: source.MainContent{
+		MainContent: jobposting.MainContent{
 			PostUrl:        postUrl,
 			Title:          result.Title,
 			Intro:          result.ServiceInfo,
@@ -153,7 +154,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*s
 		},
 		RequiredSkill: requiredSkill(result.TechStacks),
 		Tags:          tags(result.Tags),
-		RequiredCareer: source.Career{
+		RequiredCareer: jobposting.Career{
 			Min: result.MinCareer,
 			Max: result.MaxCareer,
 		},
@@ -193,8 +194,8 @@ func address(workingPlaces []WorkingPlace) []string {
 	return result
 }
 
-// company api result
-type company struct {
+// companyRes api result
+type companyRes struct {
 	Result companyResult `json:"result"`
 }
 
@@ -215,8 +216,8 @@ type companyService struct {
 	Description string `json:"description"`
 }
 
-func convertSourceCompany(company *company, site string) *source.Company {
-	result := company.Result
+func convertSourceCompany(companyRes *companyRes, site string) *company.CompanyDetail {
+	result := companyRes.Result
 
 	companyImages := make([]string, len(result.ProfileImages))
 
@@ -224,7 +225,7 @@ func convertSourceCompany(company *company, site string) *source.Company {
 		companyImages[i] = image.ImagePath
 	}
 
-	return &source.Company{
+	return &company.CompanyDetail{
 		Site:          site,
 		CompanyId:     strconv.Itoa(result.Id),
 		Name:          result.CompanyName,

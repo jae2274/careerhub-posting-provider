@@ -13,18 +13,18 @@ import (
 
 type SeparatedIds struct {
 	TotalCount      int
-	NewPostingIds   []*source.JobPostingId
+	NewPostingIds   []*jobposting.JobPostingId
 	ClosePostingIds []*jobposting.JobPostingId
 }
 
-func SeparateIds(savedJpIds []*jobposting.JobPostingId, hiringJpIds []*source.JobPostingId) *SeparatedIds {
+func SeparateIds(savedJpIds []*jobposting.JobPostingId, hiringJpIds []*jobposting.JobPostingId) *SeparatedIds {
 
 	savedJpMap := make(map[jobposting.JobPostingId]interface{})
 	for _, jp := range savedJpIds {
 		savedJpMap[*jp] = false
 	}
 
-	newJpIds := make([]*source.JobPostingId, 0)
+	newJpIds := make([]*jobposting.JobPostingId, 0)
 	for _, srcJpId := range hiringJpIds {
 		jpId := jobposting.JobPostingId{Site: srcJpId.Site, PostingId: srcJpId.PostingId}
 		if _, ok := savedJpMap[jpId]; ok {
@@ -48,7 +48,7 @@ func SeparateIds(savedJpIds []*jobposting.JobPostingId, hiringJpIds []*source.Jo
 	}
 }
 
-func CallDetail(src source.JobPostingSource, jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
+func CallDetail(src source.JobPostingSource, jpId *jobposting.JobPostingId) (*jobposting.JobPostingDetail, error) {
 	return src.Detail(jpId)
 }
 
@@ -77,7 +77,7 @@ func SendClosedJobPostings(jpRepo *jobposting.JobPostingRepo, grpcClient provide
 	return jpRepo.DeleteAll(closedJpIds)
 }
 
-func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient provider_grpc.ProviderGrpcClient, detail *source.JobPostingDetail) error {
+func SendJobPostingInfo(jpRepo *jobposting.JobPostingRepo, grpcClient provider_grpc.ProviderGrpcClient, detail *jobposting.JobPostingDetail) error {
 	message := &provider_grpc.JobPostingInfo{
 		JobPostingId: &provider_grpc.JobPostingId{
 			Site:      detail.Site,

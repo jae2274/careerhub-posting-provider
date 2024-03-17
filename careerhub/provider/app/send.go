@@ -27,29 +27,29 @@ func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobpostin
 	}
 }
 
-func (s *SendJobPostingApp) Run(ctx context.Context, newIds []*source.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
+func (s *SendJobPostingApp) Run(ctx context.Context, newIds []*jobposting.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
 
 	processedChan, errChan := s.createPipeline(ctx, newIds)
 
 	return processedChan, errChan
 }
 
-func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*source.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
+func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobposting.JobPostingId) (<-chan ProcessedSignal, <-chan error) {
 	jobPostingIdChan := newJobPostingChan(newJpIds)
 
 	step1 := pipe.NewStep(nil,
-		func(jpId *source.JobPostingId) (*source.JobPostingDetail, error) {
+		func(jpId *jobposting.JobPostingId) (*jobposting.JobPostingDetail, error) {
 			return appfunc.CallDetail(s.src, jpId)
 		})
 	step2 := pipe.NewStep(nil,
-		func(detail *source.JobPostingDetail) (*source.JobPostingDetail, error) {
+		func(detail *jobposting.JobPostingDetail) (*jobposting.JobPostingDetail, error) {
 			return detail, appfunc.ProcessCompany(s.src, s.companyRepo, s.grpcClient, &company.CompanyId{
 				Site:      detail.Site,
 				CompanyId: detail.CompanyId,
 			})
 		})
 	step3 := pipe.NewStep(nil,
-		func(detail *source.JobPostingDetail) (ProcessedSignal, error) {
+		func(detail *jobposting.JobPostingDetail) (ProcessedSignal, error) {
 			return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, appfunc.SendJobPostingInfo(s.jobpostingRepo, s.grpcClient, detail)
 		})
 
@@ -57,8 +57,8 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*sour
 	return pipe.Pipeline3(ctx, jobPostingIdChan, errChan, step1, step2, step3), errChan
 }
 
-func newJobPostingChan(newJpIds []*source.JobPostingId) <-chan *source.JobPostingId {
-	resultChan := make(chan *source.JobPostingId)
+func newJobPostingChan(newJpIds []*jobposting.JobPostingId) <-chan *jobposting.JobPostingId {
+	resultChan := make(chan *jobposting.JobPostingId)
 
 	go func() {
 		defer close(resultChan)
