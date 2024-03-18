@@ -113,7 +113,7 @@ func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource
 }
 
 func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	jobPostingRepo, companyRepo, grpcClient := initComponents(ctx, envVars)
+	jobPostingRepo, grpcClient := initComponents(ctx, envVars)
 	src, err := jobPostingSource(ctx, site)
 	checkErr(ctx, err)
 
@@ -124,12 +124,11 @@ func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNew
 		), app.NewSendJobPostingApp(
 			src,
 			jobPostingRepo,
-			companyRepo,
 			provider_grpc.NewProviderGrpcService(grpcClient),
 		)
 }
 
-func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, *company.CompanyRepo, provider_grpc.ProviderGrpcClient) {
+func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, provider_grpc.ProviderGrpcClient) {
 	db, err := mongocfg.NewDatabase(envVars.MongoUri, envVars.DbName, envVars.DBUser)
 	checkErr(ctx, err)
 
@@ -143,14 +142,13 @@ func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPos
 	companyCollection := db.Collection(companyModel.Collection())
 	err = mongocfg.CheckIndexViaCollection(companyCollection, companyModel.IndexModels())
 	checkErr(ctx, err)
-	companyRepo := company.NewCompanyRepo(companyCollection)
 
 	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	checkErr(ctx, err)
 
 	grpcClient := provider_grpc.NewProviderGrpcClient(conn)
 
-	return jobPostingRepo, companyRepo, grpcClient
+	return jobPostingRepo, grpcClient
 }
 
 func checkErr(ctx context.Context, err error) {

@@ -13,15 +13,13 @@ import (
 type SendJobPostingApp struct {
 	src            source.JobPostingSource
 	jobpostingRepo *jobposting.JobPostingRepo
-	companyRepo    *company.CompanyRepo
 	grpcService    *provider_grpc.ProviderGrpcService
 }
 
-func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, companyRepo *company.CompanyRepo, grpcService *provider_grpc.ProviderGrpcService) *SendJobPostingApp {
+func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, grpcService *provider_grpc.ProviderGrpcService) *SendJobPostingApp {
 	return &SendJobPostingApp{
 		src:            src,
 		jobpostingRepo: jobpostingRepo,
-		companyRepo:    companyRepo,
 		grpcService:    grpcService,
 	}
 }
@@ -43,14 +41,14 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobp
 	step2 := pipe.NewStep(nil,
 		func(detail *jobposting.JobPostingDetail) (*jobposting.JobPostingDetail, error) {
 
-			companyInfo, err := s.companyRepo.Get(&company.CompanyId{
+			isRegistered, err := s.grpcService.IsCompanyRegistered(context.TODO(), &company.CompanyId{
 				Site:      detail.Site,
 				CompanyId: detail.CompanyId,
 			})
 
 			if err != nil {
 				return detail, err
-			} else if companyInfo != nil {
+			} else if isRegistered {
 				return detail, nil // already processed
 			}
 
@@ -61,11 +59,6 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobp
 			}
 
 			err = s.grpcService.RegisterCompany(context.TODO(), srcCompany)
-			if err != nil {
-				return detail, err
-			}
-
-			_, err = s.companyRepo.Save(company.NewCompany(detail.Site, detail.CompanyId))
 			if err != nil {
 				return detail, err
 			}

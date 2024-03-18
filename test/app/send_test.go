@@ -2,7 +2,6 @@ package app
 
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
-	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
@@ -20,7 +19,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		ctx := context.Background()
 		src := jumpit.NewJumpitSource(ctx, 3000)
 
-		jobRepo, companyRepo, grpcClient, sendJobApp := initComponents(t, src)
+		jobRepo, grpcClient, sendJobApp := initComponents(t, src)
 
 		jpIds, err := src.List(1, 3)
 		require.NoError(t, err)
@@ -50,21 +49,16 @@ func TestSendJobPostingApp(t *testing.T) {
 		IsEqualSrcJobPostingIds(t, jpIds, jobPostingMessages)
 		IsEqualSavedJobPostingIds(t, jpIds, savedIds)
 
-		savedCompanies, err := companyRepo.GetAll()
-		require.NoError(t, err)
-
 		companyMessages := grpcClient.GetCompany()
-		IsEqualSavedCompanies(t, savedCompanies, companyMessages)
 		IsEqualJobPostingsAndCompanies(t, jobPostingMessages, companyMessages)
 	})
 }
 
-func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, *company.CompanyRepo, tinit.MockGrpcClient, *app.SendJobPostingApp) {
+func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, tinit.MockGrpcClient, *app.SendJobPostingApp) {
 	jobRepo := tinit.InitJobPostingRepo(t)
-	companyRepo := tinit.InitCompanyRepo(t)
 	grpcClient := tinit.InitGrpcClient(t)
 
-	return jobRepo, companyRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, companyRepo, provider_grpc.NewProviderGrpcService(grpcClient))
+	return jobRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, provider_grpc.NewProviderGrpcService(grpcClient))
 }
 
 func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {
@@ -91,20 +85,6 @@ Outer:
 			}
 		}
 		t.Errorf("Not found %s %s", message.Site, message.PostingId)
-		t.FailNow()
-	}
-}
-
-func IsEqualSavedCompanies(t *testing.T, savedCompanies []*company.Company, companyMessages []*provider_grpc.Company) {
-	require.Len(t, savedCompanies, len(companyMessages))
-Outer:
-	for _, companyMessage := range companyMessages {
-		for _, savedCompany := range savedCompanies {
-			if companyMessage.Site == savedCompany.Site && companyMessage.CompanyId == savedCompany.CompanyId {
-				continue Outer
-			}
-		}
-		t.Errorf("Not found %s %s", companyMessage.Site, companyMessage.CompanyId)
 		t.FailNow()
 	}
 }

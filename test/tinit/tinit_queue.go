@@ -24,6 +24,16 @@ type MockGrpcClientImpl struct {
 	Companies       []*provider_grpc.Company
 }
 
+func (m *MockGrpcClientImpl) IsCompanyRegistered(ctx context.Context, in *provider_grpc.CompanyId, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
+	for _, company := range m.Companies {
+		if company.CompanyId == in.CompanyId && company.Site == in.Site {
+			return &provider_grpc.BoolResponse{Success: true}, nil
+		}
+	}
+
+	return &provider_grpc.BoolResponse{Success: false}, nil
+}
+
 func (m *MockGrpcClientImpl) CloseJobPostings(ctx context.Context, in *provider_grpc.JobPostings, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	m.JobPostings = append(m.JobPostings, in)
 	return &provider_grpc.BoolResponse{Success: true}, nil

@@ -17,6 +17,18 @@ func NewProviderGrpcService(grpcClient ProviderGrpcClient) *ProviderGrpcService 
 	return &ProviderGrpcService{grpcClient: grpcClient}
 }
 
+func (pgs *ProviderGrpcService) IsCompanyRegistered(ctx context.Context, in *company.CompanyId) (bool, error) {
+	success, err := pgs.grpcClient.IsCompanyRegistered(ctx, &CompanyId{
+		Site:      in.Site,
+		CompanyId: in.CompanyId,
+	})
+	if err != nil {
+		return false, terr.Wrap(err)
+	}
+
+	return success.Success, nil
+}
+
 func (pgs *ProviderGrpcService) CloseJobPostings(ctx context.Context, jobpostingIds []*jobposting.JobPostingId) error {
 	pbJobpostingIds := make([]*JobPostingId, 0, len(jobpostingIds))
 	for _, id := range jobpostingIds {
