@@ -105,7 +105,7 @@ func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, 
 	}
 
 	if !successRes.Success {
-		return terr.New("failed to register job posting info")
+		return terr.New("failed to register job posting info. site: " + in.Site + ", postingId: " + in.PostingId)
 	}
 
 	return nil

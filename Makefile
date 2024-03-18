@@ -12,7 +12,7 @@ build:
 ## run: builds and runs the application
 run: build
 	@echo "Starting..."
-	@env MONGO_URI=${MONGO_URI} DB_NAME=${DB_NAME} GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} ./${BINARY_NAME} 
+	@env GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} ./${BINARY_NAME} 
 	@echo "Started!"
 
 ## clean: runs go clean and deletes binaries
@@ -41,6 +41,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env MONGO_URI=${MONGO_URI} DB_NAME=${DB_NAME} GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} go test -p 1 -timeout 600s ./test/...
+	@env GRPC_ENDPOINT=${GRPC_ENDPOINT} POST_LOG_URL=${POST_LOG_URL} go test -p 1 -timeout 600s ./test/...
 	
 
