@@ -5,9 +5,14 @@ option go_package = "careerhub/processor/provider_grpc";
 
 service ProviderGrpc{
 	rpc IsCompanyRegistered(CompanyId) returns (BoolResponse);
+	rpc GetAllHiring(Site) returns (JobPostings);
     rpc CloseJobPostings(JobPostings) returns (BoolResponse);
     rpc RegisterJobPostingInfo(JobPostingInfo) returns (BoolResponse);
     rpc RegisterCompany(Company) returns (BoolResponse);
+}
+
+message Site {
+	string site = 1;
 }
 
 message CompanyId{

@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProviderGrpcClient interface {
 	IsCompanyRegistered(ctx context.Context, in *CompanyId, opts ...grpc.CallOption) (*BoolResponse, error)
+	GetAllHiring(ctx context.Context, in *Site, opts ...grpc.CallOption) (*JobPostings, error)
 	CloseJobPostings(ctx context.Context, in *JobPostings, opts ...grpc.CallOption) (*BoolResponse, error)
 	RegisterJobPostingInfo(ctx context.Context, in *JobPostingInfo, opts ...grpc.CallOption) (*BoolResponse, error)
 	RegisterCompany(ctx context.Context, in *Company, opts ...grpc.CallOption) (*BoolResponse, error)
@@ -39,6 +40,15 @@ func NewProviderGrpcClient(cc grpc.ClientConnInterface) ProviderGrpcClient {
 func (c *providerGrpcClient) IsCompanyRegistered(ctx context.Context, in *CompanyId, opts ...grpc.CallOption) (*BoolResponse, error) {
 	out := new(BoolResponse)
 	err := c.cc.Invoke(ctx, "/careerhub.processor.provider_grpc.ProviderGrpc/IsCompanyRegistered", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *providerGrpcClient) GetAllHiring(ctx context.Context, in *Site, opts ...grpc.CallOption) (*JobPostings, error) {
+	out := new(JobPostings)
+	err := c.cc.Invoke(ctx, "/careerhub.processor.provider_grpc.ProviderGrpc/GetAllHiring", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +87,7 @@ func (c *providerGrpcClient) RegisterCompany(ctx context.Context, in *Company, o
 // for forward compatibility
 type ProviderGrpcServer interface {
 	IsCompanyRegistered(context.Context, *CompanyId) (*BoolResponse, error)
+	GetAllHiring(context.Context, *Site) (*JobPostings, error)
 	CloseJobPostings(context.Context, *JobPostings) (*BoolResponse, error)
 	RegisterJobPostingInfo(context.Context, *JobPostingInfo) (*BoolResponse, error)
 	RegisterCompany(context.Context, *Company) (*BoolResponse, error)
@@ -89,6 +100,9 @@ type UnimplementedProviderGrpcServer struct {
 
 func (UnimplementedProviderGrpcServer) IsCompanyRegistered(context.Context, *CompanyId) (*BoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsCompanyRegistered not implemented")
+}
+func (UnimplementedProviderGrpcServer) GetAllHiring(context.Context, *Site) (*JobPostings, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllHiring not implemented")
 }
 func (UnimplementedProviderGrpcServer) CloseJobPostings(context.Context, *JobPostings) (*BoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CloseJobPostings not implemented")
@@ -126,6 +140,24 @@ func _ProviderGrpc_IsCompanyRegistered_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProviderGrpcServer).IsCompanyRegistered(ctx, req.(*CompanyId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProviderGrpc_GetAllHiring_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Site)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderGrpcServer).GetAllHiring(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/careerhub.processor.provider_grpc.ProviderGrpc/GetAllHiring",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderGrpcServer).GetAllHiring(ctx, req.(*Site))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -194,6 +226,10 @@ var ProviderGrpc_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsCompanyRegistered",
 			Handler:    _ProviderGrpc_IsCompanyRegistered_Handler,
+		},
+		{
+			MethodName: "GetAllHiring",
+			Handler:    _ProviderGrpc_GetAllHiring_Handler,
 		},
 		{
 			MethodName: "CloseJobPostings",

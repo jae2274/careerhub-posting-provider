@@ -9,15 +9,22 @@ import (
 	"github.com/jae2274/goutils/terr"
 )
 
-type ProviderGrpcService struct {
+type ProviderGrpcService interface {
+	CloseJobPostings(ctx context.Context, jobpostingIds []*jobposting.JobPostingId) error
+	GetAllHiring(ctx context.Context, site string) ([]*jobposting.JobPostingId, error)
+	IsCompanyRegistered(ctx context.Context, in *company.CompanyId) (bool, error)
+	RegisterCompany(ctx context.Context, in *company.CompanyDetail) error
+	RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error
+}
+type ProviderGrpcServiceImpl struct {
 	grpcClient ProviderGrpcClient
 }
 
-func NewProviderGrpcService(grpcClient ProviderGrpcClient) *ProviderGrpcService {
-	return &ProviderGrpcService{grpcClient: grpcClient}
+func NewProviderGrpcService(grpcClient ProviderGrpcClient) ProviderGrpcService {
+	return &ProviderGrpcServiceImpl{grpcClient: grpcClient}
 }
 
-func (pgs *ProviderGrpcService) IsCompanyRegistered(ctx context.Context, in *company.CompanyId) (bool, error) {
+func (pgs *ProviderGrpcServiceImpl) IsCompanyRegistered(ctx context.Context, in *company.CompanyId) (bool, error) {
 	success, err := pgs.grpcClient.IsCompanyRegistered(ctx, &CompanyId{
 		Site:      in.Site,
 		CompanyId: in.CompanyId,
@@ -29,7 +36,21 @@ func (pgs *ProviderGrpcService) IsCompanyRegistered(ctx context.Context, in *com
 	return success.Success, nil
 }
 
-func (pgs *ProviderGrpcService) CloseJobPostings(ctx context.Context, jobpostingIds []*jobposting.JobPostingId) error {
+func (pgs *ProviderGrpcServiceImpl) GetAllHiring(ctx context.Context, site string) ([]*jobposting.JobPostingId, error) {
+	jobpostings, err := pgs.grpcClient.GetAllHiring(ctx, &Site{Site: site})
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	jobpostingIds := make([]*jobposting.JobPostingId, len(jobpostings.JobPostingIds))
+	for i, jp := range jobpostings.JobPostingIds {
+		jobpostingIds[i] = &jobposting.JobPostingId{Site: jp.Site, PostingId: jp.PostingId}
+	}
+
+	return jobpostingIds, nil
+}
+
+func (pgs *ProviderGrpcServiceImpl) CloseJobPostings(ctx context.Context, jobpostingIds []*jobposting.JobPostingId) error {
 	pbJobpostingIds := make([]*JobPostingId, 0, len(jobpostingIds))
 	for _, id := range jobpostingIds {
 		pbJobpostingIds = append(pbJobpostingIds, &JobPostingId{Site: id.Site, PostingId: id.PostingId})
@@ -47,7 +68,7 @@ func (pgs *ProviderGrpcService) CloseJobPostings(ctx context.Context, jobposting
 	return nil
 }
 
-func (pgs *ProviderGrpcService) RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error {
+func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error {
 	pbJobPosting := &JobPostingInfo{
 		JobPostingId: &JobPostingId{Site: in.Site, PostingId: in.PostingId},
 		CompanyId:    in.CompanyId,
@@ -89,7 +110,7 @@ func (pgs *ProviderGrpcService) RegisterJobPostingInfo(ctx context.Context, in *
 
 	return nil
 }
-func (pgs *ProviderGrpcService) RegisterCompany(ctx context.Context, in *company.CompanyDetail) error {
+func (pgs *ProviderGrpcServiceImpl) RegisterCompany(ctx context.Context, in *company.CompanyDetail) error {
 	successRes, err := pgs.grpcClient.RegisterCompany(ctx, &Company{
 		Site:          in.Site,
 		CompanyId:     in.CompanyId,

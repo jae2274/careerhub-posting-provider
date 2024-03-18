@@ -3,10 +3,7 @@ package main
 //aws pipeline trigger
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
-	"careerhub-dataprovider/careerhub/provider/domain/company"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"careerhub-dataprovider/careerhub/provider/logger"
-	"careerhub-dataprovider/careerhub/provider/mongocfg"
 	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
@@ -50,12 +47,18 @@ func main() {
 	findNewApp, sendInfoApp := initApp(mainCtx, site, envVars)
 
 	llog.Msg("Start finding new job postings").Log(mainCtx)
-	newJobPostingIds, err := findNewApp.Run(mainCtx)
+	separateId, err := findNewApp.Run(mainCtx)
 	checkErr(mainCtx, err)
-	llog.Msg("End finding new job postings").Log(mainCtx)
+	llog.Msg("End finding new job postings").Datas(
+		map[string]any{
+			"totalCount":         separateId.TotalCount,
+			"newPostingCount":    len(separateId.NewPostingIds),
+			"closedPostingCount": len(separateId.ClosePostingIds),
+		},
+	).Log(mainCtx)
 
 	llog.Msg("Start sending job postings").Log(mainCtx)
-	processedChan, errChan := sendInfoApp.Run(mainCtx, newJobPostingIds)
+	processedChan, errChan := sendInfoApp.Run(mainCtx, separateId.NewPostingIds)
 
 	loggedErrChan := justLog(mainCtx, errChan)
 
@@ -113,42 +116,27 @@ func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource
 }
 
 func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	jobPostingRepo, grpcClient := initComponents(ctx, envVars)
+	grpcClient := initComponents(ctx, envVars)
 	src, err := jobPostingSource(ctx, site)
 	checkErr(ctx, err)
 
 	return app.NewFindNewJobPostingApp(
 			src,
-			jobPostingRepo,
 			provider_grpc.NewProviderGrpcService(grpcClient),
 		), app.NewSendJobPostingApp(
 			src,
-			jobPostingRepo,
 			provider_grpc.NewProviderGrpcService(grpcClient),
 		)
 }
 
-func initComponents(ctx context.Context, envVars *vars.Vars) (*jobposting.JobPostingRepo, provider_grpc.ProviderGrpcClient) {
-	db, err := mongocfg.NewDatabase(envVars.MongoUri, envVars.DbName, envVars.DBUser)
-	checkErr(ctx, err)
-
-	jobPostingModel := &jobposting.JobPosting{}
-	jobPostingCollection := db.Collection(jobPostingModel.Collection())
-	err = mongocfg.CheckIndexViaCollection(jobPostingCollection, jobPostingModel.IndexModels())
-	checkErr(ctx, err)
-	jobPostingRepo := jobposting.NewJobPostingRepo(jobPostingCollection)
-
-	companyModel := &company.Company{}
-	companyCollection := db.Collection(companyModel.Collection())
-	err = mongocfg.CheckIndexViaCollection(companyCollection, companyModel.IndexModels())
-	checkErr(ctx, err)
+func initComponents(ctx context.Context, envVars *vars.Vars) provider_grpc.ProviderGrpcClient {
 
 	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	checkErr(ctx, err)
 
 	grpcClient := provider_grpc.NewProviderGrpcClient(conn)
 
-	return jobPostingRepo, grpcClient
+	return grpcClient
 }
 
 func checkErr(ctx context.Context, err error) {

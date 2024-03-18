@@ -13,9 +13,6 @@ import (
 
 type MockGrpcClient interface {
 	provider_grpc.ProviderGrpcClient
-	GetClosedJpIds() []*provider_grpc.JobPostings
-	GetJobPostingInfo() []*provider_grpc.JobPostingInfo
-	GetCompany() []*provider_grpc.Company
 }
 
 type MockGrpcClientImpl struct {
@@ -34,6 +31,16 @@ func (m *MockGrpcClientImpl) IsCompanyRegistered(ctx context.Context, in *provid
 	return &provider_grpc.BoolResponse{Success: false}, nil
 }
 
+func (m *MockGrpcClientImpl) GetAllHiring(ctx context.Context, in *provider_grpc.Site, opts ...grpc.CallOption) (*provider_grpc.JobPostings, error) {
+
+	jobPostingIds := make([]*provider_grpc.JobPostingId, len(m.JobPostingInfos))
+	for i, jp := range m.JobPostingInfos {
+		jobPostingIds[i] = &provider_grpc.JobPostingId{Site: jp.JobPostingId.Site, PostingId: jp.JobPostingId.PostingId}
+	}
+
+	return &provider_grpc.JobPostings{JobPostingIds: jobPostingIds}, nil
+}
+
 func (m *MockGrpcClientImpl) CloseJobPostings(ctx context.Context, in *provider_grpc.JobPostings, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	m.JobPostings = append(m.JobPostings, in)
 	return &provider_grpc.BoolResponse{Success: true}, nil
@@ -47,18 +54,6 @@ func (m *MockGrpcClientImpl) RegisterJobPostingInfo(ctx context.Context, in *pro
 func (m *MockGrpcClientImpl) RegisterCompany(ctx context.Context, in *provider_grpc.Company, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	m.Companies = append(m.Companies, in)
 	return &provider_grpc.BoolResponse{Success: true}, nil
-}
-
-func (m *MockGrpcClientImpl) GetClosedJpIds() []*provider_grpc.JobPostings {
-	return m.JobPostings
-}
-
-func (m *MockGrpcClientImpl) GetJobPostingInfo() []*provider_grpc.JobPostingInfo {
-	return m.JobPostingInfos
-}
-
-func (m *MockGrpcClientImpl) GetCompany() []*provider_grpc.Company {
-	return m.Companies
 }
 
 func InitGrpcClient(t *testing.T) MockGrpcClient {

@@ -2,7 +2,7 @@ package app
 
 import (
 	"careerhub-dataprovider/careerhub/provider/app"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
+	"careerhub-dataprovider/careerhub/provider/domain/company"
 	"careerhub-dataprovider/careerhub/provider/provider_grpc"
 	"careerhub-dataprovider/careerhub/provider/source"
 	"careerhub-dataprovider/careerhub/provider/source/jumpit"
@@ -19,7 +19,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		ctx := context.Background()
 		src := jumpit.NewJumpitSource(ctx, 3000)
 
-		jobRepo, grpcClient, sendJobApp := initComponents(t, src)
+		grpcService, sendJobApp := initComponents(t, src)
 
 		jpIds, err := src.List(1, 3)
 		require.NoError(t, err)
@@ -40,64 +40,27 @@ func TestSendJobPostingApp(t *testing.T) {
 				}
 			}
 		}
-		savedIds, err := jobRepo.GetAllHiring(src.Site())
+		savedIds, err := grpcService.GetAllHiring(ctx, src.Site())
 		require.NoError(t, err)
-		require.Len(t, savedIds, len(jpIds))
+		require.Equal(t, jpIds, savedIds)
+		// IsEqualSavedJobPostingIds(t, jpIds, savedIds)
 
-		jobPostingMessages := grpcClient.GetJobPostingInfo()
-
-		IsEqualSrcJobPostingIds(t, jpIds, jobPostingMessages)
-		IsEqualSavedJobPostingIds(t, jpIds, savedIds)
-
-		companyMessages := grpcClient.GetCompany()
-		IsEqualJobPostingsAndCompanies(t, jobPostingMessages, companyMessages)
+		for _, jpId := range jpIds {
+			detail, err := src.Detail(jpId)
+			require.NoError(t, err)
+			isRegistered, err := grpcService.IsCompanyRegistered(context.TODO(), &company.CompanyId{
+				Site:      detail.Site,
+				CompanyId: detail.CompanyId,
+			})
+			require.NoError(t, err)
+			require.True(t, isRegistered)
+		}
 	})
 }
 
-func initComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, tinit.MockGrpcClient, *app.SendJobPostingApp) {
-	jobRepo := tinit.InitJobPostingRepo(t)
+func initComponents(t *testing.T, src source.JobPostingSource) (provider_grpc.ProviderGrpcService, *app.SendJobPostingApp) {
 	grpcClient := tinit.InitGrpcClient(t)
+	grpcService := provider_grpc.NewProviderGrpcService(grpcClient)
 
-	return jobRepo, grpcClient, app.NewSendJobPostingApp(src, jobRepo, provider_grpc.NewProviderGrpcService(grpcClient))
-}
-
-func IsEqualSrcJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, jobPostingMessages []*provider_grpc.JobPostingInfo) {
-	require.Len(t, jobPostingMessages, len(srcJpIds))
-Outer:
-	for _, jobPostingMessage := range jobPostingMessages {
-		for _, srcJpId := range srcJpIds {
-			if jobPostingMessage.JobPostingId.Site == srcJpId.Site && jobPostingMessage.JobPostingId.PostingId == srcJpId.PostingId {
-				continue Outer
-			}
-		}
-		t.Errorf("Not found %s %s", jobPostingMessage.JobPostingId.Site, jobPostingMessage.JobPostingId.PostingId)
-		t.FailNow()
-	}
-}
-
-func IsEqualSavedJobPostingIds(t *testing.T, srcJpIds []*jobposting.JobPostingId, savedJpIds []*jobposting.JobPostingId) {
-	require.Len(t, savedJpIds, len(srcJpIds))
-Outer:
-	for _, message := range savedJpIds {
-		for _, savedJpId := range srcJpIds {
-			if message.Site == savedJpId.Site && message.PostingId == savedJpId.PostingId {
-				continue Outer
-			}
-		}
-		t.Errorf("Not found %s %s", message.Site, message.PostingId)
-		t.FailNow()
-	}
-}
-
-func IsEqualJobPostingsAndCompanies(t *testing.T, jobPostingMessages []*provider_grpc.JobPostingInfo, companyMessages []*provider_grpc.Company) {
-	jpCompany := make(map[string]interface{})
-	for _, jobPosting := range jobPostingMessages {
-		jpCompany[jobPosting.JobPostingId.Site+jobPosting.CompanyId] = false
-	}
-
-	for _, company := range companyMessages {
-		if _, ok := jpCompany[company.Site+company.CompanyId]; !ok {
-			require.Fail(t, "Not found %s %s", company.Site, company.CompanyId)
-		}
-	}
+	return grpcService, app.NewSendJobPostingApp(src, grpcService)
 }

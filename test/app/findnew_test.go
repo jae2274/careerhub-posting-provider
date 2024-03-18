@@ -55,41 +55,32 @@ func TestFindNew(t *testing.T) {
 		src := NewMockSource(originSrc)
 
 		allJpId, err := source.AllJobPostingIds(src)
-
-		jobRepo, ClosedQueue, findNewJobPostingApp := initFindNewComponents(t, src)
-
 		require.NoError(t, err)
 
-		savedJpIds := allJpId[:20]
-		closedJpIds := []jobposting.JobPostingId{
-			{Site: src.Site(), PostingId: "closed_1"},
-			{Site: src.Site(), PostingId: "closed_2"},
-			{Site: src.Site(), PostingId: "closed_3"},
-		}
-
-		for _, jpId := range savedJpIds {
-			_, err = jobRepo.Save(jobposting.NewJobPosting(jpId.Site, jpId.PostingId))
+		grpcService, findNewJobPostingApp := initFindNewComponents(t, src)
+		for _, jpId := range allJpId[:3] {
+			detail, err := src.Detail(jpId)
+			require.NoError(t, err)
+			err = grpcService.RegisterJobPostingInfo(ctx, detail)
 			require.NoError(t, err)
 		}
-		for _, jpId := range closedJpIds {
-			_, err = jobRepo.Save(jobposting.NewJobPosting(jpId.Site, jpId.PostingId))
+
+		closedJobPostingIds := []*jobposting.JobPostingId{
+			{Site: "jumpit", PostingId: "closed_1"},
+			{Site: "jumpit", PostingId: "closed_2"},
+			{Site: "jumpit", PostingId: "closed_3"},
+		}
+
+		for _, jpId := range closedJobPostingIds {
+			err = grpcService.RegisterJobPostingInfo(ctx, dummyJobPosting(jpId))
 			require.NoError(t, err)
 		}
 
 		newJpIds, err := findNewJobPostingApp.Run(ctx)
 		require.NoError(t, err)
-
-		require.Equal(t, allJpId[20:], newJpIds)
-
-		msgs := getClosedMessages(t, ClosedQueue)
-		require.Len(t, msgs, 1)
-		require.Len(t, msgs[0].JobPostingIds, len(closedJpIds))
-		IsEqualClosedJobPostingIds(t, closedJpIds, msgs)
-
-		allSavedJp, err := jobRepo.GetAllHiring(src.Site())
-		require.NoError(t, err)
-
-		IsEqualSavedJobPostings(t, savedJpIds, allSavedJp) //savedJpIds와 closedJpIds 둘 다 DB에 저장되었으나 findNewJobPostingApp.Run() 실행 후 closedJpIds는 DB에서 삭제되었음
+		require.Equal(t, len(allJpId), newJpIds.TotalCount)
+		require.Equal(t, allJpId[3:], newJpIds.NewPostingIds)
+		require.Equal(t, closedJobPostingIds, newJpIds.ClosePostingIds)
 	}
 
 	t.Run("jumpit", func(t *testing.T) {
@@ -105,45 +96,40 @@ func TestFindNew(t *testing.T) {
 	})
 }
 
-func initFindNewComponents(t *testing.T, src source.JobPostingSource) (*jobposting.JobPostingRepo, tinit.MockGrpcClient, *app.FindNewJobPostingApp) {
+func initFindNewComponents(t *testing.T, src source.JobPostingSource) (provider_grpc.ProviderGrpcService, *app.FindNewJobPostingApp) {
 
-	jobRepo := tinit.InitJobPostingRepo(t)
 	grpcClient := tinit.InitGrpcClient(t)
+	grpcService := provider_grpc.NewProviderGrpcService(grpcClient)
 
-	return jobRepo, grpcClient, app.NewFindNewJobPostingApp(src, jobRepo, provider_grpc.NewProviderGrpcService(grpcClient))
+	return grpcService, app.NewFindNewJobPostingApp(src, grpcService)
 }
 
-func getClosedMessages(t *testing.T, grpcClient tinit.MockGrpcClient) []*provider_grpc.JobPostings {
-
-	return grpcClient.GetClosedJpIds()
-}
-
-func IsEqualClosedJobPostingIds(t *testing.T, closedJpIds []jobposting.JobPostingId, closedMessages []*provider_grpc.JobPostings) {
-	require.Len(t, closedMessages, 1)
-	require.Len(t, closedMessages[0].JobPostingIds, len(closedJpIds))
-Outer:
-	for _, closedMessage := range closedMessages[0].JobPostingIds {
-		for _, closedJpId := range closedJpIds {
-			if closedMessage.Site == closedJpId.Site && closedMessage.PostingId == closedJpId.PostingId {
-				continue Outer
-			}
-		}
-		t.Errorf("Not found %s %s", closedMessage.Site, closedMessage.PostingId)
-		t.FailNow()
-	}
-}
-
-func IsEqualSavedJobPostings(t *testing.T, srcJpIds []*jobposting.JobPostingId, savedJps []*jobposting.JobPostingId) {
-	require.Len(t, savedJps, len(srcJpIds))
-
-Outer:
-	for _, savedJp := range savedJps {
-		for _, srcJpId := range srcJpIds {
-			if savedJp.Site == srcJpId.Site && savedJp.PostingId == srcJpId.PostingId {
-				continue Outer
-			}
-		}
-		t.Errorf("Not found %s %s", savedJp.Site, savedJp.PostingId)
-		t.FailNow()
+func dummyJobPosting(jpId *jobposting.JobPostingId) *jobposting.JobPostingDetail {
+	return &jobposting.JobPostingDetail{
+		Site:        jpId.Site,
+		PostingId:   jpId.PostingId,
+		CompanyId:   "dummy",
+		CompanyName: "dummy",
+		JobCategory: []string{"dummy"},
+		MainContent: jobposting.MainContent{
+			PostUrl:        "dummy",
+			Title:          "dummy",
+			Intro:          "dummy",
+			MainTask:       "dummy",
+			Qualifications: "dummy",
+			Preferred:      "dummy",
+			Benefits:       "dummy",
+		},
+		RequiredSkill: []string{"dummy"},
+		Tags:          []string{"dummy"},
+		RequiredCareer: jobposting.Career{
+			Min: new(int32),
+			Max: new(int32),
+		},
+		PublishedAt:   new(int64),
+		ClosedAt:      new(int64),
+		Address:       []string{"dummy"},
+		ImageUrl:      new(string),
+		CompanyImages: []string{"dummy"},
 	}
 }

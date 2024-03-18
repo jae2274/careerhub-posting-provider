@@ -11,16 +11,14 @@ import (
 )
 
 type SendJobPostingApp struct {
-	src            source.JobPostingSource
-	jobpostingRepo *jobposting.JobPostingRepo
-	grpcService    *provider_grpc.ProviderGrpcService
+	src         source.JobPostingSource
+	grpcService provider_grpc.ProviderGrpcService
 }
 
-func NewSendJobPostingApp(src source.JobPostingSource, jobpostingRepo *jobposting.JobPostingRepo, grpcService *provider_grpc.ProviderGrpcService) *SendJobPostingApp {
+func NewSendJobPostingApp(src source.JobPostingSource, grpcService provider_grpc.ProviderGrpcService) *SendJobPostingApp {
 	return &SendJobPostingApp{
-		src:            src,
-		jobpostingRepo: jobpostingRepo,
-		grpcService:    grpcService,
+		src:         src,
+		grpcService: grpcService,
 	}
 }
 
@@ -68,11 +66,6 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobp
 	step3 := pipe.NewStep(nil,
 		func(detail *jobposting.JobPostingDetail) (ProcessedSignal, error) {
 			err := s.grpcService.RegisterJobPostingInfo(context.TODO(), detail)
-			if err != nil {
-				return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, err
-			}
-
-			_, err = s.jobpostingRepo.Save(jobposting.NewJobPosting(detail.Site, detail.PostingId))
 			if err != nil {
 				return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, err
 			}
