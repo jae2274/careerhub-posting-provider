@@ -1,12 +1,13 @@
 package source
 
 import (
-	"careerhub-dataprovider/careerhub/provider/source"
-	"careerhub-dataprovider/careerhub/provider/source/jumpit"
-	"careerhub-dataprovider/careerhub/provider/source/wanted"
 	"context"
 	"slices"
 	"testing"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source/jumpit"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source/wanted"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/validator.v2"

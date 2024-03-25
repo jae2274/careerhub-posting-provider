@@ -1,11 +1,12 @@
 package app
 
 import (
-	"careerhub-dataprovider/careerhub/provider/domain/company"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/provider_grpc"
-	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/provider_grpc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
 
 	"github.com/jae2274/goutils/cchan/pipe"
 )

@@ -1,9 +1,10 @@
 package appfunc
 
 import (
-	"careerhub-dataprovider/careerhub/provider/app/appfunc"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"testing"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/app/appfunc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
 
 	"github.com/stretchr/testify/require"
 )

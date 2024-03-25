@@ -1,4 +1,4 @@
-module careerhub-dataprovider
+module github.com/jae2274/careerhub-posting-provider
 
 go 1.21.4
 

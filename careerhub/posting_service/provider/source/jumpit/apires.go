@@ -1,11 +1,12 @@
 package jumpit
 
 import (
-	"careerhub-dataprovider/careerhub/provider/domain/company"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
 
 	"github.com/jae2274/goutils/ptr"
 	"github.com/jae2274/goutils/terr"

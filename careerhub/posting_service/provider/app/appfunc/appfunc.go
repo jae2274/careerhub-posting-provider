@@ -1,7 +1,7 @@
 package appfunc
 
 import (
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
 )
 
 type SeparatedIds struct {

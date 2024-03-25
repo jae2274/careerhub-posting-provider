@@ -1,14 +1,15 @@
 package tinit
 
 import (
-	"careerhub-dataprovider/careerhub/provider/domain/company"
-	"careerhub-dataprovider/careerhub/provider/domain/jobposting"
-	"careerhub-dataprovider/careerhub/provider/provider_grpc"
-	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
 	"fmt"
 	"runtime"
 	"testing"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/provider_grpc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/vars"
 
 	"google.golang.org/grpc"
 )

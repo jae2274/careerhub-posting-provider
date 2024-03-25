@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v4.25.1
-// source: careerhub/provider/queue/message_v1/closedjobpostings.proto
+// source: careerhub/posting_service/provider/queue/message_v1/closedjobpostings.proto
 
 package message_v1
 

@@ -1,10 +1,11 @@
 package app
 
 import (
-	"careerhub-dataprovider/careerhub/provider/app/appfunc"
-	"careerhub-dataprovider/careerhub/provider/provider_grpc"
-	"careerhub-dataprovider/careerhub/provider/source"
 	"context"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/app/appfunc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/provider_grpc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
 )
 
 type FindNewJobPostingApp struct {

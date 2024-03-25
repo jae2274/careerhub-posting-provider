@@ -2,18 +2,19 @@ package main
 
 //aws pipeline trigger
 import (
-	"careerhub-dataprovider/careerhub/provider/app"
-	"careerhub-dataprovider/careerhub/provider/logger"
-	"careerhub-dataprovider/careerhub/provider/provider_grpc"
-	"careerhub-dataprovider/careerhub/provider/source"
-	"careerhub-dataprovider/careerhub/provider/source/jumpit"
-	"careerhub-dataprovider/careerhub/provider/source/wanted"
-	"careerhub-dataprovider/careerhub/provider/vars"
 	"context"
 	"flag"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/app"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/logger"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/provider_grpc"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source/jumpit"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source/wanted"
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/vars"
 
 	"github.com/jae2274/goutils/cchan"
 	"github.com/jae2274/goutils/cchan/pipe"
