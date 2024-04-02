@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/app"
-	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/logger"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/provider_grpc"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source/jumpit"
@@ -31,6 +30,21 @@ const (
 	ctxKeyTraceID = "trace_id"
 )
 
+func initLogger(ctx context.Context) error {
+	llog.SetMetadata("service", service)
+	llog.SetMetadata("app", appName)
+	llog.SetDefaultContextData(ctxKeyTraceID)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	llog.SetMetadata("hostname", hostname)
+
+	return nil
+}
+
 func siteFlag() string {
 	siteFlag := flag.String("site", "", "site to crawl")
 	flag.Parse()
@@ -40,10 +54,17 @@ func siteFlag() string {
 
 func main() {
 	mainCtx, quitFunc := context.WithCancel(context.Background())
-	envVars := initEnvVars()
 
+	err := initLogger(mainCtx)
+	checkErr(mainCtx, err)
+	llog.Info(mainCtx, "Start Application")
+
+	envVars, err := vars.Variables()
+	checkErr(mainCtx, err)
 	site := siteFlag()
-	appLogger := initLogger(mainCtx, site, envVars.PostLogUrl)
+
+	llog.SetMetadata("site", site)
+	llog.Info(mainCtx, fmt.Sprintf("Site flag is set. site: %s", site))
 
 	findNewApp, sendInfoApp := initApp(mainCtx, site, envVars)
 
@@ -75,31 +96,6 @@ func main() {
 
 	<-mainCtx.Done()
 	llog.Msg("Finish This application").Log(mainCtx)
-	appLogger.Wg.Wait()
-}
-
-func initEnvVars() *vars.Vars {
-	envVars, err := vars.Variables()
-	checkErr(context.Background(), err)
-	return envVars
-}
-
-func initLogger(ctx context.Context, site, postLogUrl string) *logger.AppLogger {
-	llog.SetMetadata("service", service)
-	llog.SetMetadata("app", appName)
-	llog.SetMetadata("site", site)
-	llog.SetDefaultContextData(ctxKeyTraceID)
-
-	hostname, err := os.Hostname()
-	checkErr(ctx, err)
-
-	llog.SetMetadata("hostname", hostname)
-
-	appLogger, err := logger.NewAppLogger(ctx, postLogUrl)
-	checkErr(ctx, err)
-
-	llog.SetDefaultLLoger(appLogger)
-	return appLogger
 }
 
 func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource, error) {

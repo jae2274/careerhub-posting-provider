@@ -28,7 +28,7 @@ type MainContent struct {
 	Intro          string `validate:"nonzero"`
 	MainTask       string `validate:"nonzero"`
 	Qualifications string `validate:"nonzero"`
-	Preferred      string `validate:"nonzero"`
+	Preferred      string
 	Benefits       string `validate:"nonzero"`
 	RecruitProcess *string
 }

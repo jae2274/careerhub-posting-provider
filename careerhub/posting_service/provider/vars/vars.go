@@ -7,7 +7,6 @@ import (
 
 type Vars struct {
 	GrpcEndpoint string
-	PostLogUrl   string
 }
 
 type ErrNotExistedVar struct {
@@ -29,14 +28,8 @@ func Variables() (*Vars, error) {
 		return nil, err
 	}
 
-	postLogUrl, err := getFromEnv("POST_LOG_URL")
-	if err != nil {
-		return nil, err
-	}
-
 	return &Vars{
 		GrpcEndpoint: grpcEndpoint,
-		PostLogUrl:   postLogUrl,
 	}, nil
 }
 
