@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	appName = "data-provider"
+	appName = "posting-provider"
 	service = "careerhub"
 
 	ctxKeyTraceID = "trace_id"
