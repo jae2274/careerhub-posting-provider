@@ -82,7 +82,7 @@ func TestFindNew(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, len(allJpId), newJpIds.TotalCount)
 		require.Equal(t, allJpId[3:], newJpIds.NewPostingIds)
-		require.Equal(t, closedJobPostingIds, newJpIds.ClosePostingIds)
+		require.ElementsMatch(t, closedJobPostingIds, newJpIds.ClosePostingIds)
 	}
 
 	t.Run("jumpit", func(t *testing.T) {
