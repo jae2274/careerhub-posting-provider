@@ -74,8 +74,7 @@ func (s *SendJobPostingApp) createPipeline(ctx context.Context, newJpIds []*jobp
 			return ProcessedSignal{Site: detail.Site, PostingId: detail.PostingId}, nil
 		})
 
-	errChan := make(chan error, 100)
-	return pipe.Pipeline3(ctx, jobPostingIdChan, errChan, step1, step2, step3), errChan
+	return pipe.Pipeline3(ctx, jobPostingIdChan, step1, step2, step3)
 }
 
 func newJobPostingChan(newJpIds []*jobposting.JobPostingId) <-chan *jobposting.JobPostingId {

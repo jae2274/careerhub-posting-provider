@@ -18,6 +18,7 @@ import (
 	"github.com/jae2274/goutils/cchan"
 	"github.com/jae2274/goutils/cchan/pipe"
 	"github.com/jae2274/goutils/llog"
+	"github.com/jae2274/goutils/mw/grpcmw"
 	"github.com/jae2274/goutils/terr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -128,7 +129,11 @@ func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNew
 
 func initComponents(ctx context.Context, envVars *vars.Vars) provider_grpc.ProviderGrpcClient {
 
-	conn, err := grpc.Dial(envVars.GrpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(envVars.GrpcEndpoint,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainStreamInterceptor(grpcmw.SetTraceIdStreamMW()),
+		grpc.WithChainUnaryInterceptor(grpcmw.SetTraceIdUnaryMW()),
+	)
 	checkErr(ctx, err)
 
 	grpcClient := provider_grpc.NewProviderGrpcClient(conn)
