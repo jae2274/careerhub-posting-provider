@@ -18,15 +18,16 @@ type ProviderGrpcService interface {
 	RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error
 }
 type ProviderGrpcServiceImpl struct {
-	grpcClient ProviderGrpcClient
+	jobPostingClient ProviderGrpcClient
+	reviewGrpcClient CrawlingTaskGrpcClient
 }
 
-func NewProviderGrpcService(grpcClient ProviderGrpcClient) ProviderGrpcService {
-	return &ProviderGrpcServiceImpl{grpcClient: grpcClient}
+func NewProviderGrpcService(jobPostingClient ProviderGrpcClient, reviewGrpcClient CrawlingTaskGrpcClient) ProviderGrpcService {
+	return &ProviderGrpcServiceImpl{jobPostingClient: jobPostingClient, reviewGrpcClient: reviewGrpcClient}
 }
 
 func (pgs *ProviderGrpcServiceImpl) IsCompanyRegistered(ctx context.Context, in *company.CompanyId) (bool, error) {
-	success, err := pgs.grpcClient.IsCompanyRegistered(ctx, &CompanyId{
+	success, err := pgs.jobPostingClient.IsCompanyRegistered(ctx, &CompanyId{
 		Site:      in.Site,
 		CompanyId: in.CompanyId,
 	})
@@ -38,7 +39,7 @@ func (pgs *ProviderGrpcServiceImpl) IsCompanyRegistered(ctx context.Context, in 
 }
 
 func (pgs *ProviderGrpcServiceImpl) GetAllHiring(ctx context.Context, site string) ([]*jobposting.JobPostingId, error) {
-	jobpostings, err := pgs.grpcClient.GetAllHiring(ctx, &Site{Site: site})
+	jobpostings, err := pgs.jobPostingClient.GetAllHiring(ctx, &Site{Site: site})
 	if err != nil {
 		return nil, terr.Wrap(err)
 	}
@@ -57,7 +58,7 @@ func (pgs *ProviderGrpcServiceImpl) CloseJobPostings(ctx context.Context, jobpos
 		pbJobpostingIds = append(pbJobpostingIds, &JobPostingId{Site: id.Site, PostingId: id.PostingId})
 	}
 
-	successRes, err := pgs.grpcClient.CloseJobPostings(ctx, &JobPostings{JobPostingIds: pbJobpostingIds})
+	successRes, err := pgs.jobPostingClient.CloseJobPostings(ctx, &JobPostings{JobPostingIds: pbJobpostingIds})
 	if err != nil {
 		return terr.Wrap(err)
 	}
@@ -99,7 +100,7 @@ func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, 
 		CompanyImages: in.CompanyImages,
 	}
 
-	successRes, err := pgs.grpcClient.RegisterJobPostingInfo(ctx, pbJobPosting)
+	successRes, err := pgs.jobPostingClient.RegisterJobPostingInfo(ctx, pbJobPosting)
 
 	if err != nil {
 		return terr.Wrap(err)
@@ -112,7 +113,14 @@ func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, 
 	return nil
 }
 func (pgs *ProviderGrpcServiceImpl) RegisterCompany(ctx context.Context, in *company.CompanyDetail) error {
-	successRes, err := pgs.grpcClient.RegisterCompany(ctx, &Company{
+	_, err := pgs.reviewGrpcClient.AddCrawlingTask(ctx, &AddCrawlingTaskRequest{
+		CompanyName: in.Name,
+	})
+	if err != nil {
+		return terr.Wrap(err)
+	}
+
+	successRes, err := pgs.jobPostingClient.RegisterCompany(ctx, &Company{
 		Site:          in.Site,
 		CompanyId:     in.CompanyId,
 		Name:          in.Name,

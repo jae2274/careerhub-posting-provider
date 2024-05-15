@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type MockGrpcClient interface {
+type MockJobPostingGrpcClient interface {
 	provider_grpc.ProviderGrpcClient
 	GetCompanyCount() int
 	GetJobPostingCount() int
@@ -22,12 +22,12 @@ type MockGrpcClient interface {
 	GetJobPosting(*jobposting.JobPostingId) *jobposting.JobPostingDetail
 }
 
-type MockGrpcClientImpl struct {
+type MockJobPostingGrpcClientImpl struct {
 	JobPostingInfos []*provider_grpc.JobPostingInfo
 	Companies       []*provider_grpc.Company
 }
 
-func (m *MockGrpcClientImpl) IsCompanyRegistered(ctx context.Context, in *provider_grpc.CompanyId, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
+func (m *MockJobPostingGrpcClientImpl) IsCompanyRegistered(ctx context.Context, in *provider_grpc.CompanyId, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	for _, company := range m.Companies {
 		if company.CompanyId == in.CompanyId && company.Site == in.Site {
 			return &provider_grpc.BoolResponse{Success: true}, nil
@@ -37,7 +37,7 @@ func (m *MockGrpcClientImpl) IsCompanyRegistered(ctx context.Context, in *provid
 	return &provider_grpc.BoolResponse{Success: false}, nil
 }
 
-func (m *MockGrpcClientImpl) GetAllHiring(ctx context.Context, in *provider_grpc.Site, opts ...grpc.CallOption) (*provider_grpc.JobPostings, error) {
+func (m *MockJobPostingGrpcClientImpl) GetAllHiring(ctx context.Context, in *provider_grpc.Site, opts ...grpc.CallOption) (*provider_grpc.JobPostings, error) {
 
 	jobPostingIds := make([]*provider_grpc.JobPostingId, len(m.JobPostingInfos))
 	for i, jp := range m.JobPostingInfos {
@@ -47,7 +47,7 @@ func (m *MockGrpcClientImpl) GetAllHiring(ctx context.Context, in *provider_grpc
 	return &provider_grpc.JobPostings{JobPostingIds: jobPostingIds}, nil
 }
 
-func (m *MockGrpcClientImpl) CloseJobPostings(ctx context.Context, in *provider_grpc.JobPostings, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
+func (m *MockJobPostingGrpcClientImpl) CloseJobPostings(ctx context.Context, in *provider_grpc.JobPostings, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 
 	newJobPostings := make([]*provider_grpc.JobPostingInfo, 0)
 	for _, existedJp := range m.JobPostingInfos {
@@ -63,25 +63,25 @@ func (m *MockGrpcClientImpl) CloseJobPostings(ctx context.Context, in *provider_
 	return &provider_grpc.BoolResponse{Success: true}, nil
 }
 
-func (m *MockGrpcClientImpl) RegisterJobPostingInfo(ctx context.Context, in *provider_grpc.JobPostingInfo, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
+func (m *MockJobPostingGrpcClientImpl) RegisterJobPostingInfo(ctx context.Context, in *provider_grpc.JobPostingInfo, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	m.JobPostingInfos = append(m.JobPostingInfos, in)
 	return &provider_grpc.BoolResponse{Success: true}, nil
 }
 
-func (m *MockGrpcClientImpl) RegisterCompany(ctx context.Context, in *provider_grpc.Company, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
+func (m *MockJobPostingGrpcClientImpl) RegisterCompany(ctx context.Context, in *provider_grpc.Company, opts ...grpc.CallOption) (*provider_grpc.BoolResponse, error) {
 	m.Companies = append(m.Companies, in)
 	return &provider_grpc.BoolResponse{Success: true}, nil
 }
 
-func (m *MockGrpcClientImpl) GetCompanyCount() int {
+func (m *MockJobPostingGrpcClientImpl) GetCompanyCount() int {
 	return len(m.Companies)
 }
 
-func (m *MockGrpcClientImpl) GetJobPostingCount() int {
+func (m *MockJobPostingGrpcClientImpl) GetJobPostingCount() int {
 	return len(m.JobPostingInfos)
 }
 
-func (m *MockGrpcClientImpl) GetCompany(in *company.CompanyId) *company.CompanyDetail {
+func (m *MockJobPostingGrpcClientImpl) GetCompany(in *company.CompanyId) *company.CompanyDetail {
 	for _, c := range m.Companies {
 		if c.CompanyId == in.CompanyId && c.Site == in.Site {
 			return &company.CompanyDetail{
@@ -99,7 +99,36 @@ func (m *MockGrpcClientImpl) GetCompany(in *company.CompanyId) *company.CompanyD
 	return nil
 }
 
-func (m *MockGrpcClientImpl) GetJobPosting(in *jobposting.JobPostingId) *jobposting.JobPostingDetail {
+type MockReviewGrpcClient interface {
+	provider_grpc.CrawlingTaskGrpcClient
+	GetCrawlingTasks() []*provider_grpc.AddCrawlingTaskRequest
+	GetCrawlingTask(companyName string) *provider_grpc.AddCrawlingTaskRequest
+}
+
+type MockReviewGrpcClientImpl struct {
+	CrawlingTasks []*provider_grpc.AddCrawlingTaskRequest
+}
+
+func (m *MockReviewGrpcClientImpl) AddCrawlingTask(ctx context.Context, in *provider_grpc.AddCrawlingTaskRequest, opts ...grpc.CallOption) (*provider_grpc.AddCrawlingTaskResponse, error) {
+	m.CrawlingTasks = append(m.CrawlingTasks, in)
+	return &provider_grpc.AddCrawlingTaskResponse{Status: "success"}, nil
+}
+
+func (m *MockReviewGrpcClientImpl) GetCrawlingTasks() []*provider_grpc.AddCrawlingTaskRequest {
+	return m.CrawlingTasks
+}
+
+func (m *MockReviewGrpcClientImpl) GetCrawlingTask(companyName string) *provider_grpc.AddCrawlingTaskRequest {
+	for _, task := range m.CrawlingTasks {
+		if task.CompanyName == companyName {
+			return task
+		}
+	}
+
+	return nil
+}
+
+func (m *MockJobPostingGrpcClientImpl) GetJobPosting(in *jobposting.JobPostingId) *jobposting.JobPostingDetail {
 	for _, jp := range m.JobPostingInfos {
 		if jp.JobPostingId.PostingId == in.PostingId && jp.JobPostingId.Site == in.Site {
 			return &jobposting.JobPostingDetail{
@@ -136,19 +165,21 @@ func (m *MockGrpcClientImpl) GetJobPosting(in *jobposting.JobPostingId) *jobpost
 	return nil
 }
 
-func InitGrpcClient(t *testing.T) MockGrpcClient {
+func InitGrpcClient(t *testing.T) (MockJobPostingGrpcClient, MockReviewGrpcClient) {
 	variables, err := vars.Variables()
 	checkError(t, err)
 
-	if variables.GrpcEndpoint == "" {
-		t.Fatal("GRPC_ENDPOINT is not set")
+	if variables.JobPostingGrpcEndpoint == "" {
+		t.Fatal("JOB_POSTING_GRPC_ENDPOINT is not set")
 		t.FailNow()
 	}
 
-	return &MockGrpcClientImpl{
-		JobPostingInfos: make([]*provider_grpc.JobPostingInfo, 0),
-		Companies:       make([]*provider_grpc.Company, 0),
-	}
+	return &MockJobPostingGrpcClientImpl{
+			JobPostingInfos: make([]*provider_grpc.JobPostingInfo, 0),
+			Companies:       make([]*provider_grpc.Company, 0),
+		}, &MockReviewGrpcClientImpl{
+			CrawlingTasks: make([]*provider_grpc.AddCrawlingTaskRequest, 0),
+		}
 }
 
 func checkError(t *testing.T, err error) {

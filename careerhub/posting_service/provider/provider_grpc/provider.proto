@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package careerhub.review_service.provider_grpc;
+option go_package = "careerhub/review_service/provider_grpc";
+
+service CrawlingTaskGrpc{
+    rpc addCrawlingTask(AddCrawlingTaskRequest) returns (AddCrawlingTaskResponse);
+}
+
+message AddCrawlingTaskRequest{
+    string companyName = 1;
+}
+
+message AddCrawlingTaskResponse{
+    string status = 1;//created, duplicated, not_modified
+}

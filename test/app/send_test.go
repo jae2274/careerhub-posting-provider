@@ -19,8 +19,8 @@ func TestSendJobPostingApp(t *testing.T) {
 		ctx := context.Background()
 		src := jumpit.NewJumpitSource(ctx, 3000)
 
-		grpcClient := tinit.InitGrpcClient(t)
-		grpcService := provider_grpc.NewProviderGrpcService(grpcClient)
+		jobPostingClient, reviewClient := tinit.InitGrpcClient(t)
+		grpcService := provider_grpc.NewProviderGrpcService(jobPostingClient, reviewClient)
 		sendJobApp := app.NewSendJobPostingApp(src, grpcService)
 
 		jpIds, err := src.List(1, 3)
@@ -50,7 +50,7 @@ func TestSendJobPostingApp(t *testing.T) {
 		for _, jpId := range jpIds {
 			detail, err := src.Detail(jpId)
 			require.NoError(t, err)
-			require.Equal(t, detail, grpcClient.GetJobPosting(jpId))
+			require.Equal(t, detail, jobPostingClient.GetJobPosting(jpId))
 
 			companyId := &company.CompanyId{
 				Site:      detail.Site,
@@ -63,7 +63,9 @@ func TestSendJobPostingApp(t *testing.T) {
 
 			companyDetail, err := src.Company(companyId.CompanyId)
 			require.NoError(t, err)
-			require.Equal(t, companyDetail, grpcClient.GetCompany(companyId))
+			require.Equal(t, companyDetail, jobPostingClient.GetCompany(companyId))
+			require.NotNil(t, reviewClient.GetCrawlingTask(detail.CompanyName))
+
 		}
 	})
 }

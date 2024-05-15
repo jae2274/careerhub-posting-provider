@@ -114,31 +114,35 @@ func jobPostingSource(ctx context.Context, site string) (source.JobPostingSource
 }
 
 func initApp(ctx context.Context, site string, envVars *vars.Vars) (*app.FindNewJobPostingApp, *app.SendJobPostingApp) {
-	grpcClient := initComponents(ctx, envVars)
+	jobPostingClient, reviewClient := initComponents(ctx, envVars)
 	src, err := jobPostingSource(ctx, site)
 	checkErr(ctx, err)
 
-	return app.NewFindNewJobPostingApp(
-			src,
-			provider_grpc.NewProviderGrpcService(grpcClient),
-		), app.NewSendJobPostingApp(
-			src,
-			provider_grpc.NewProviderGrpcService(grpcClient),
-		)
+	srv := provider_grpc.NewProviderGrpcService(jobPostingClient, reviewClient)
+
+	return app.NewFindNewJobPostingApp(src, srv), app.NewSendJobPostingApp(src, srv)
 }
 
-func initComponents(ctx context.Context, envVars *vars.Vars) provider_grpc.ProviderGrpcClient {
-
-	conn, err := grpc.Dial(envVars.GrpcEndpoint,
+func initComponents(ctx context.Context, envVars *vars.Vars) (provider_grpc.ProviderGrpcClient, provider_grpc.CrawlingTaskGrpcClient) {
+	conn, err := grpc.Dial(envVars.JobPostingGrpcEndpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainStreamInterceptor(grpcmw.SetTraceIdStreamMW()),
 		grpc.WithChainUnaryInterceptor(grpcmw.SetTraceIdUnaryMW()),
 	)
 	checkErr(ctx, err)
 
-	grpcClient := provider_grpc.NewProviderGrpcClient(conn)
+	jobPostingClient := provider_grpc.NewProviderGrpcClient(conn)
 
-	return grpcClient
+	conn, err = grpc.Dial(envVars.ReviewGrpcEndpoint,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainStreamInterceptor(grpcmw.SetTraceIdStreamMW()),
+		grpc.WithChainUnaryInterceptor(grpcmw.SetTraceIdUnaryMW()),
+	)
+	checkErr(ctx, err)
+
+	reviewClient := provider_grpc.NewCrawlingTaskGrpcClient(conn)
+
+	return jobPostingClient, reviewClient
 }
 
 func checkErr(ctx context.Context, err error) {

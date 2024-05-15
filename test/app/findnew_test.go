@@ -100,8 +100,8 @@ func TestFindNew(t *testing.T) {
 
 func initFindNewComponents(t *testing.T, src source.JobPostingSource) (provider_grpc.ProviderGrpcService, *app.FindNewJobPostingApp) {
 
-	grpcClient := tinit.InitGrpcClient(t)
-	grpcService := provider_grpc.NewProviderGrpcService(grpcClient)
+	jobPostingClient, reviewClient := tinit.InitGrpcClient(t)
+	grpcService := provider_grpc.NewProviderGrpcService(jobPostingClient, reviewClient)
 
 	return grpcService, app.NewFindNewJobPostingApp(src, grpcService)
 }

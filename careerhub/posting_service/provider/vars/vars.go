@@ -6,7 +6,8 @@ import (
 )
 
 type Vars struct {
-	GrpcEndpoint string
+	JobPostingGrpcEndpoint string
+	ReviewGrpcEndpoint     string
 }
 
 type ErrNotExistedVar struct {
@@ -23,13 +24,19 @@ func (e *ErrNotExistedVar) Error() string {
 
 func Variables() (*Vars, error) {
 
-	grpcEndpoint, err := getFromEnv("GRPC_ENDPOINT")
+	jobPostingGrpcEndpoint, err := getFromEnv("JOB_POSTING_GRPC_ENDPOINT")
+	if err != nil {
+		return nil, err
+	}
+
+	reviewGrpcEndpoint, err := getFromEnv("REVIEW_GRPC_ENDPOINT")
 	if err != nil {
 		return nil, err
 	}
 
 	return &Vars{
-		GrpcEndpoint: grpcEndpoint,
+		JobPostingGrpcEndpoint: jobPostingGrpcEndpoint,
+		ReviewGrpcEndpoint:     reviewGrpcEndpoint,
 	}, nil
 }
 
