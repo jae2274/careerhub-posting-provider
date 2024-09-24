@@ -1,10 +1,15 @@
 package source
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
+	"github.com/jae2274/goutils/apiactor"
+	"github.com/jae2274/goutils/jjson"
+	"github.com/jae2274/goutils/terr"
 )
 
 type JobPostingSource interface {
@@ -73,4 +78,18 @@ func appendJobPostingIds(jobPostingIds []*jobposting.JobPostingId, newIds []*job
 	}
 
 	return jobPostingIds
+}
+
+func CallApi[RESULT any](aActor *apiactor.ApiActor, request *apiactor.Request) (*RESULT, error) {
+	rc, err := aActor.Call(request)
+	if err != nil {
+		return nil, terr.Wrap(errors.Join(err, fmt.Errorf("\turl: %s", request.Url)))
+	}
+
+	result, err := jjson.UnmarshalReader[RESULT](rc)
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	return result, nil
 }

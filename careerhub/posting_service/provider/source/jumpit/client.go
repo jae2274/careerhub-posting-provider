@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
 	"github.com/jae2274/goutils/apiactor"
-	"github.com/jae2274/goutils/jjson"
 	"github.com/jae2274/goutils/terr"
 )
 
@@ -25,7 +25,7 @@ func (ja *jumpitApiClient) List(page, size int) (*postingList, error) {
 		fmt.Sprintf("https://api.jumpit.co.kr/api/positions?page=%d&size=%d&sort=reg_dt&highlight=false", page, size),
 	)
 
-	return callApi[postingList](ja.aActor, request)
+	return source.CallApi[postingList](ja.aActor, request)
 }
 
 func (ja *jumpitApiClient) Detail(postingId string) (string, *postingDetail, error) {
@@ -35,7 +35,7 @@ func (ja *jumpitApiClient) Detail(postingId string) (string, *postingDetail, err
 		postingUrl,
 	)
 
-	result, err := callApi[postingDetail](ja.aActor, request)
+	result, err := source.CallApi[postingDetail](ja.aActor, request)
 	if err != nil {
 		return "", nil, terr.Wrap(err)
 	}
@@ -49,25 +49,11 @@ func (ja *jumpitApiClient) Company(companyId string) (*companyRes, error) {
 		"GET",
 		companyUrl,
 	)
-	response, err := callApi[companyRes](ja.aActor, request)
+	response, err := source.CallApi[companyRes](ja.aActor, request)
 
 	if err != nil {
 		return nil, terr.Wrap(err)
 	}
 
 	return response, nil
-}
-
-func callApi[RESULT any](aActor *apiactor.ApiActor, request *apiactor.Request) (*RESULT, error) {
-	rc, err := aActor.Call(request)
-	if err != nil {
-		return nil, terr.Wrap(err)
-	}
-
-	result, err := jjson.UnmarshalReader[RESULT](rc)
-	if err != nil {
-		return nil, terr.Wrap(err)
-	}
-
-	return result, nil
 }
