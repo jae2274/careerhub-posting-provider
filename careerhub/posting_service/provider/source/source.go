@@ -81,6 +81,12 @@ func appendJobPostingIds(jobPostingIds []*jobposting.JobPostingId, newIds []*job
 }
 
 func CallApi[RESULT any](aActor *apiactor.ApiActor, request *apiactor.Request) (*RESULT, error) {
+	request.Header.Add("X-Crawler-Message", "Please_allow_crawling")
+	request.Header.Add("X-Crawler-Start-Time", "04_09_00")
+	request.Header.Add("X-Crawler-Target", "Job_postings_and_company_information")
+	request.Header.Add("X-Crawler-Purpose", "Introduction_and_linking_to_job_postings_to_external_sites")
+	request.Header.Add("X-Crawler-Benefit", "Increased_job_applications_through_external_links")
+
 	rc, err := aActor.Call(request)
 	if err != nil {
 		return nil, terr.Wrap(errors.Join(err, fmt.Errorf("\turl: %s", request.Url)))
