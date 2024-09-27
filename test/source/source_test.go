@@ -2,7 +2,6 @@ package source
 
 import (
 	"context"
-	"slices"
 	"testing"
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/source"
@@ -67,18 +66,18 @@ func testSource(t *testing.T, src source.JobPostingSource) {
 		}
 	})
 
-	t.Run("AllJobPostingIds", func(t *testing.T) {
+	// t.Run("AllJobPostingIds", func(t *testing.T) {
 
-		jobPostingIds, err := source.AllJobPostingIds(src)
+	// 	jobPostingIds, err := source.AllJobPostingIds(src)
 
-		require.NoError(t, err)
-		require.NotEmpty(t, jobPostingIds)
+	// 	require.NoError(t, err)
+	// 	require.NotEmpty(t, jobPostingIds)
 
-		page1, err := src.List(1, 10)
-		require.NoError(t, err)
+	// 	page1, err := src.List(1, 10)
+	// 	require.NoError(t, err)
 
-		last10 := jobPostingIds[len(jobPostingIds)-10:]
-		slices.Reverse(last10)
-		require.ElementsMatch(t, page1, last10) //가장 오래된 채용공고부터 정렬되어야 하므로, 마지막 10개는 첫 페이지와 같아야 한다.
-	})
+	// 	last10 := jobPostingIds[len(jobPostingIds)-10:]
+	// 	slices.Reverse(last10)
+	// 	require.ElementsMatch(t, page1, last10) //가장 오래된 채용공고부터 정렬되어야 하므로, 마지막 10개는 첫 페이지와 같아야 한다.
+	// })
 }

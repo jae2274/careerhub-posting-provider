@@ -2,7 +2,6 @@ package jumpit
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
@@ -59,7 +58,8 @@ type detailResult struct {
 	ClosedAt              string              `json:"closedAt"`
 	Location              *interface{}        `json:"location,omitempty"`
 	Tags                  []tag               `json:"tags"`
-	CompanyProfileID      int                 `json:"companyProfileId"`
+	CompanyProfileID      int                 `json:"companyProfileId"` //will be deprecated
+	EncodedSerialNumber   string              `json:"encodedSerialNumber"`
 	CompanyURL            *string             `json:"companyUrl,omitempty"`
 	AlwaysOpen            bool                `json:"alwaysOpen"`
 	Celebration           int                 `json:"celebration"`
@@ -138,7 +138,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*j
 	return &jobposting.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", result.ID),
-		CompanyId:     fmt.Sprintf("%d", result.CompanyProfileID),
+		CompanyId:     result.EncodedSerialNumber,
 		CompanyName:   result.CompanyName,
 		JobCategory:   jobCategory,
 		ImageUrl:      imageUrl,
@@ -201,12 +201,13 @@ type companyRes struct {
 }
 
 type companyResult struct {
-	Id             int            `json:"id"`
-	CompanyName    string         `json:"companyName"`
-	CompanySite    *string        `json:"companySite,omitempty"`
-	CompanyService companyService `json:"companyService"`
-	CompanyLogo    string         `json:"companyLogo"`
-	ProfileImages  []profileImage `json:"profileImages"`
+	Id                  int            `json:"id"`
+	EncodedSerialNumber string         `json:"encodedSerialNumber"`
+	CompanyName         string         `json:"companyName"`
+	CompanySite         *string        `json:"companySite,omitempty"`
+	CompanyService      companyService `json:"companyService"`
+	CompanyLogo         string         `json:"companyLogo"`
+	ProfileImages       []profileImage `json:"profileImages"`
 }
 
 type profileImage struct {
@@ -228,7 +229,7 @@ func convertSourceCompany(companyRes *companyRes, site string) *company.CompanyD
 
 	return &company.CompanyDetail{
 		Site:          site,
-		CompanyId:     strconv.Itoa(result.Id),
+		CompanyId:     result.EncodedSerialNumber,
 		Name:          result.CompanyName,
 		CompanyUrl:    result.CompanySite,
 		CompanyImages: companyImages,

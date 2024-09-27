@@ -12,7 +12,7 @@ build:
 ## run: builds and runs the application
 run: build
 	@echo "Starting..."
-	@env GRPC_ENDPOINT=${GRPC_ENDPOINT} ./${BINARY_NAME} 
+	@env JOB_POSTING_GRPC_ENDPOINT=${JOB_POSTING_GRPC_ENDPOINT} REVIEW_GRPC_ENDPOINT=${REVIEW_GRPC_ENDPOINT} ./${BINARY_NAME} 
 	@echo "Started!"
 
 ## clean: runs go clean and deletes binaries
@@ -41,6 +41,6 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
-	@env GRPC_ENDPOINT=${GRPC_ENDPOINT} go test -p 1 -timeout 600s ./test/...
+	@env JOB_POSTING_GRPC_ENDPOINT=${JOB_POSTING_GRPC_ENDPOINT} REVIEW_GRPC_ENDPOINT=${REVIEW_GRPC_ENDPOINT} go test -p 1 -timeout 600s ./test/...
 	
 
