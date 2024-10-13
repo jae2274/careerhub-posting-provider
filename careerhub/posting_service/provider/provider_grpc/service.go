@@ -6,6 +6,7 @@ import (
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
+	"gopkg.in/validator.v2"
 
 	"github.com/jae2274/goutils/terr"
 )
@@ -71,6 +72,10 @@ func (pgs *ProviderGrpcServiceImpl) CloseJobPostings(ctx context.Context, jobpos
 }
 
 func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error {
+	if err := validator.Validate(in); err != nil {
+		return err
+	}
+
 	pbJobPosting := &JobPostingInfo{
 		JobPostingId: &JobPostingId{Site: in.Site, PostingId: in.PostingId},
 		CompanyId:    in.CompanyId,
@@ -113,6 +118,10 @@ func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, 
 	return nil
 }
 func (pgs *ProviderGrpcServiceImpl) RegisterCompany(ctx context.Context, in *company.CompanyDetail) error {
+	if err := validator.Validate(in); err != nil {
+		return err
+	}
+
 	_, err := pgs.reviewGrpcClient.AddCrawlingTask(ctx, &AddCrawlingTaskRequest{
 		CompanyName: in.Name,
 	})
