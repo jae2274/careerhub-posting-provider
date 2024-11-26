@@ -2,6 +2,8 @@ package provider_grpc
 
 import (
 	context "context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
@@ -73,7 +75,7 @@ func (pgs *ProviderGrpcServiceImpl) CloseJobPostings(ctx context.Context, jobpos
 
 func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, in *jobposting.JobPostingDetail) error {
 	if err := validator.Validate(in); err != nil {
-		return err
+		return errors.Join(err, fmt.Errorf("postingId: %s", in.PostingId))
 	}
 
 	pbJobPosting := &JobPostingInfo{
@@ -119,7 +121,7 @@ func (pgs *ProviderGrpcServiceImpl) RegisterJobPostingInfo(ctx context.Context, 
 }
 func (pgs *ProviderGrpcServiceImpl) RegisterCompany(ctx context.Context, in *company.CompanyDetail) error {
 	if err := validator.Validate(in); err != nil {
-		return err
+		return errors.Join(err, fmt.Errorf("companyId: %s", in.CompanyId))
 	}
 
 	_, err := pgs.reviewGrpcClient.AddCrawlingTask(ctx, &AddCrawlingTaskRequest{
