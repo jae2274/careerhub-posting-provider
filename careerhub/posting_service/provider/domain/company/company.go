@@ -18,6 +18,6 @@ type CompanyDetail struct {
 	Name          string `validate:"nonzero"`
 	CompanyUrl    *string
 	CompanyImages []string
-	Description   string `validate:"nonzero"`
-	CompanyLogo   string `validate:"nonzero"`
+	Description   string
+	CompanyLogo   string
 }

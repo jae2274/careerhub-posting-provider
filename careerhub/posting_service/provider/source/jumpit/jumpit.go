@@ -63,5 +63,5 @@ func (js *JumpitSource) Company(companyId string) (*company.CompanyDetail, error
 		return nil, err
 	}
 
-	return convertSourceCompany(response, js.Site()), nil
+	return convertSourceCompany(response, js.Site())
 }

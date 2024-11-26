@@ -218,7 +218,7 @@ type companyService struct {
 	Description string `json:"description"`
 }
 
-func convertSourceCompany(companyRes *companyRes, site string) *company.CompanyDetail {
+func convertSourceCompany(companyRes *companyRes, site string) (*company.CompanyDetail, error) {
 	result := companyRes.Result
 
 	companyImages := make([]string, len(result.ProfileImages))
@@ -227,7 +227,7 @@ func convertSourceCompany(companyRes *companyRes, site string) *company.CompanyD
 		companyImages[i] = image.ImagePath
 	}
 
-	return &company.CompanyDetail{
+	dCompany := &company.CompanyDetail{
 		Site:          site,
 		CompanyId:     result.EncodedSerialNumber,
 		Name:          result.CompanyName,
@@ -236,4 +236,29 @@ func convertSourceCompany(companyRes *companyRes, site string) *company.CompanyD
 		Description:   result.CompanyService.Description,
 		CompanyLogo:   result.CompanyLogo,
 	}
+	return dCompany, checkValid(dCompany)
+}
+
+func checkValid(dCompany *company.CompanyDetail) error {
+	invalidFields := make([]string, 0)
+
+	if dCompany.Site == "" {
+		invalidFields = append(invalidFields, "site")
+	}
+	if dCompany.CompanyId == "" {
+		invalidFields = append(invalidFields, "companyId")
+	}
+	if dCompany.Name == "" {
+		invalidFields = append(invalidFields, "name")
+	}
+
+	if dCompany.CompanyLogo == "" {
+		invalidFields = append(invalidFields, "companyLogo")
+	}
+
+	if len(invalidFields) > 0 {
+		return terr.New(fmt.Sprintf("site: %s, companyId: %s, empty fields: %v", dCompany.Site, dCompany.CompanyId, invalidFields))
+	}
+
+	return nil
 }

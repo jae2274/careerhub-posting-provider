@@ -7,6 +7,7 @@ import (
 
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/company"
 	"github.com/jae2274/careerhub-posting-provider/careerhub/posting_service/provider/domain/jobposting"
+	"github.com/jae2274/goutils/terr"
 )
 
 type wantedPostingList struct {
@@ -226,7 +227,7 @@ type companyLogoImage struct {
 	Origin string `json:"origin"`
 }
 
-func convertSourceCompany(companyRes *wantedCompany, site string) *company.CompanyDetail {
+func convertSourceCompany(companyRes *wantedCompany, site string) (*company.CompanyDetail, error) {
 	result := companyRes.Company
 
 	companyImages := make([]string, len(result.CompanyImages))
@@ -234,8 +235,7 @@ func convertSourceCompany(companyRes *wantedCompany, site string) *company.Compa
 	for i, image := range result.CompanyImages {
 		companyImages[i] = image.Url
 	}
-
-	return &company.CompanyDetail{
+	dCompany := &company.CompanyDetail{
 		Site:          site,
 		CompanyId:     strconv.Itoa(result.Id),
 		Name:          result.Name,
@@ -244,4 +244,33 @@ func convertSourceCompany(companyRes *wantedCompany, site string) *company.Compa
 		Description:   result.Detail.Description,
 		CompanyLogo:   result.LogoImg.Origin,
 	}
+	return dCompany, checkValid(dCompany)
+}
+
+func checkValid(dCompany *company.CompanyDetail) error {
+	invalidFields := make([]string, 0)
+
+	if dCompany.Site == "" {
+		invalidFields = append(invalidFields, "site")
+	}
+	if dCompany.CompanyId == "" {
+		invalidFields = append(invalidFields, "companyId")
+	}
+	if dCompany.Name == "" {
+		invalidFields = append(invalidFields, "name")
+	}
+
+	if dCompany.Description == "" {
+		invalidFields = append(invalidFields, "description")
+	}
+
+	if dCompany.CompanyLogo == "" {
+		invalidFields = append(invalidFields, "companyLogo")
+	}
+
+	if len(invalidFields) > 0 {
+		return terr.New(fmt.Sprintf("site: %s, companyId: %s, empty fields: %v", dCompany.Site, dCompany.CompanyId, invalidFields))
+	}
+
+	return nil
 }
