@@ -264,10 +264,6 @@ func checkValid(dCompany *company.CompanyDetail) error {
 		invalidFields = append(invalidFields, "description")
 	}
 
-	if dCompany.CompanyLogo == "" {
-		invalidFields = append(invalidFields, "companyLogo")
-	}
-
 	if len(invalidFields) > 0 {
 		return terr.New(fmt.Sprintf("site: %s, companyId: %s, empty fields: %v", dCompany.Site, dCompany.CompanyId, invalidFields))
 	}
