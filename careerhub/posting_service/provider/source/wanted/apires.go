@@ -145,7 +145,7 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		imageUrl = nil
 	}
 
-	return &jobposting.JobPostingDetail{
+	dPosting := &jobposting.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", job.ID),
 		CompanyId:     fmt.Sprintf("%d", job.Company.ID),
@@ -172,7 +172,59 @@ func convertSourceDetail(detail *wantedPostingDetail, site string, postingUrl st
 		PublishedAt: nil,
 		ClosedAt:    &closedAt,
 		Address:     []string{job.Address.FullLocation},
-	}, nil
+	}
+
+	return dPosting, checkValidPostingDetail(dPosting)
+}
+
+func checkValidPostingDetail(dPosting *jobposting.JobPostingDetail) error {
+	invalidFields := make([]string, 0)
+
+	if dPosting.Site == "" {
+		invalidFields = append(invalidFields, "site")
+	}
+
+	if dPosting.PostingId == "" {
+		invalidFields = append(invalidFields, "postingId")
+	}
+
+	if dPosting.CompanyId == "" {
+		invalidFields = append(invalidFields, "companyId")
+	}
+
+	if dPosting.CompanyName == "" {
+		invalidFields = append(invalidFields, "companyName")
+	}
+
+	if dPosting.MainContent.PostUrl == "" {
+		invalidFields = append(invalidFields, "postUrl")
+	}
+
+	if dPosting.MainContent.Title == "" {
+		invalidFields = append(invalidFields, "title")
+	}
+
+	if dPosting.MainContent.Intro == "" {
+		invalidFields = append(invalidFields, "intro")
+	}
+
+	if dPosting.MainContent.MainTask == "" {
+		invalidFields = append(invalidFields, "mainTask")
+	}
+
+	if dPosting.MainContent.Qualifications == "" {
+		invalidFields = append(invalidFields, "qualifications")
+	}
+
+	if dPosting.Address == nil {
+		invalidFields = append(invalidFields, "address")
+	}
+
+	if len(invalidFields) > 0 {
+		return terr.New(fmt.Sprintf("site: %s, postingId: %s, empty fields: %v", dPosting.Site, dPosting.PostingId, invalidFields))
+	}
+
+	return nil
 }
 
 type CategoryJson struct {

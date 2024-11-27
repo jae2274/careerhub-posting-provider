@@ -25,11 +25,11 @@ type JobPostingDetail struct {
 type MainContent struct {
 	PostUrl        string `validate:"nonzero"`
 	Title          string `validate:"nonzero"`
-	Intro          string `validate:"nonzero"`
+	Intro          string
 	MainTask       string `validate:"nonzero"`
 	Qualifications string `validate:"nonzero"`
 	Preferred      string
-	Benefits       string `validate:"nonzero"`
+	Benefits       string
 	RecruitProcess *string
 }
 

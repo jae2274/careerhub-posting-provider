@@ -135,7 +135,7 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*j
 		jobCategory[i] = category.Name
 	}
 
-	return &jobposting.JobPostingDetail{
+	dPosting := &jobposting.JobPostingDetail{
 		Site:          site,
 		PostingId:     fmt.Sprintf("%d", result.ID),
 		CompanyId:     result.EncodedSerialNumber,
@@ -162,7 +162,58 @@ func convertSourceDetail(postingDetail *postingDetail, site, postUrl string) (*j
 		PublishedAt: ptr.P(publishedAt.UnixMilli()),
 		ClosedAt:    ptr.P(closedAt.UnixMilli()),
 		Address:     address(result.WorkingPlaces),
-	}, nil
+	}
+	return dPosting, checkValidPostingDetail(dPosting)
+}
+
+func checkValidPostingDetail(dPosting *jobposting.JobPostingDetail) error {
+	invalidFields := make([]string, 0)
+
+	if dPosting.Site == "" {
+		invalidFields = append(invalidFields, "site")
+	}
+
+	if dPosting.PostingId == "" {
+		invalidFields = append(invalidFields, "postingId")
+	}
+
+	if dPosting.CompanyId == "" {
+		invalidFields = append(invalidFields, "companyId")
+	}
+
+	if dPosting.CompanyName == "" {
+		invalidFields = append(invalidFields, "companyName")
+	}
+
+	if dPosting.MainContent.PostUrl == "" {
+		invalidFields = append(invalidFields, "postUrl")
+	}
+
+	if dPosting.MainContent.Title == "" {
+		invalidFields = append(invalidFields, "title")
+	}
+
+	if dPosting.MainContent.MainTask == "" {
+		invalidFields = append(invalidFields, "mainTask")
+	}
+
+	if dPosting.MainContent.Qualifications == "" {
+		invalidFields = append(invalidFields, "qualifications")
+	}
+
+	if dPosting.MainContent.Benefits == "" {
+		invalidFields = append(invalidFields, "benefits")
+	}
+
+	if dPosting.Address == nil {
+		invalidFields = append(invalidFields, "address")
+	}
+
+	if len(invalidFields) > 0 {
+		return terr.New(fmt.Sprintf("site: %s, postingId: %s, empty fields: %v", dPosting.Site, dPosting.PostingId, invalidFields))
+	}
+
+	return nil
 }
 
 func requiredSkill(teckStack []techStack) []string {
@@ -236,10 +287,10 @@ func convertSourceCompany(companyRes *companyRes, site string) (*company.Company
 		Description:   result.CompanyService.Description,
 		CompanyLogo:   result.CompanyLogo,
 	}
-	return dCompany, checkValid(dCompany)
+	return dCompany, checkValidCompany(dCompany)
 }
 
-func checkValid(dCompany *company.CompanyDetail) error {
+func checkValidCompany(dCompany *company.CompanyDetail) error {
 	invalidFields := make([]string, 0)
 
 	if dCompany.Site == "" {
@@ -250,10 +301,6 @@ func checkValid(dCompany *company.CompanyDetail) error {
 	}
 	if dCompany.Name == "" {
 		invalidFields = append(invalidFields, "name")
-	}
-
-	if dCompany.CompanyLogo == "" {
-		invalidFields = append(invalidFields, "companyLogo")
 	}
 
 	if len(invalidFields) > 0 {
